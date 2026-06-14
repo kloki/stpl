@@ -1,0 +1,154 @@
+# 📎 stpl (staple)
+
+Quick creation and management of markdown notes and memos from the command line.
+
+`stpl` is **filesystem-based** — every memo is a plain `.md` file in a dated
+folder tree, so your notes stay yours, readable and editable with any tool
+(`nvim`, `grep`, `rg`, git…). It's designed to be equally pleasant for **humans**
+and **agentic AI**: clean text output, clickable `file://` links, fuzzy title
+matching, and structured JSON when you need it.
+
+## Install
+
+```sh
+cargo install --path .
+# or, from the repo:
+cargo build --release   # binary at target/release/stpl
+```
+
+## Quick start
+
+```sh
+stpl init                              # write ~/.config/stpl.toml
+stpl new "Standup notes" -m "blocked on CI"
+stpl overview                          # list everything, grouped by week
+stpl edit standup                      # fuzzy-match and open in $EDITOR
+```
+
+## How notes are stored
+
+Memos live under the configured memo directory (default `~/stpls`) in a
+`year / ISO-week / file` tree. Folders are created lazily, on demand.
+
+```
+~/stpls/
+└── 2026/
+    └── 24/                                  # ISO week number, zero-padded
+        ├── 2026-06-14-standup-notes.md      # a memo
+        └── 2026-06-14-release/              # a project (see `expand`)
+            └── project.md
+```
+
+- Filenames are `<iso-date>-<slug>.md`; the slug is a lower-kebab form of the
+  title (`Standup Notes` → `standup-notes`).
+- Weeks use the **ISO-8601** week (and ISO week-numbering year), so notes near a
+  year boundary group consistently.
+
+A new memo starts from a small template:
+
+```markdown
+---
+title: Standup notes
+date: 2026-06-14
+tags: []
+---
+
+# Standup notes
+
+blocked on CI
+```
+
+## Configuration
+
+`stpl init` writes `~/.config/stpl.toml`:
+
+```toml
+memo_directory = "/home/you/stpls"
+disable_emoji  = false
+disable_color  = false
+```
+
+| Option           | Description                                                 |
+| ---------------- | ----------------------------------------------------------- |
+| `memo_directory` | Root directory for all memos. `~` is expanded.              |
+| `disable_emoji`  | Drop emoji (e.g. 📎) from output.                           |
+| `disable_color`  | Disable ANSI color. The `NO_COLOR` env var is also honored. |
+
+Color and clickable links are automatically suppressed when output is not a
+terminal (e.g. piped to a file or another program).
+
+## Commands
+
+### `stpl init`
+
+Create the config file with defaults. Won't overwrite an existing config.
+
+### `stpl new <title> [-m <content>]`
+
+Create a new memo dated today.
+
+- With `-m/--message`, writes the content and reports the path.
+- Without `-m`, creates the file and opens it in `$EDITOR`.
+
+```sh
+stpl new "Grocery list" -m "milk, eggs, coffee"
+stpl new "Design doc"                     # opens $EDITOR
+```
+
+### `stpl edit <title>`
+
+Fuzzy-match a memo by title and open it in `$EDITOR`.
+
+### `stpl del <title> [-y]`
+
+Delete a memo after confirmation. Projects remove the whole directory (the
+prompt makes this explicit). Pass `-y/--yes` to skip the prompt; without a TTY,
+`-y` is required.
+
+### `stpl expand <title>`
+
+Turn a single-file memo into a **project** directory:
+`…-release.md` → `…-release/project.md`. Useful when a note grows into something
+with attachments or multiple files.
+
+### `stpl overview [-f <format>] [-a <after>] [-b <before>]`
+
+List memos grouped by `year/week`.
+
+- `-f, --format` — `text` (default, agent-friendly), `json`, `markdown`, or
+  `editor` (renders markdown and opens it in `$EDITOR`).
+- `-a, --after` / `-b, --before` — filter by date, inclusive, `YYYY-MM-DD`.
+
+```sh
+stpl overview                            # text
+stpl overview -f json                    # machine-readable
+stpl overview -a 2026-06-01 -b 2026-06-30
+```
+
+## Title matching
+
+Title arguments to `edit`, `del`, and `expand` are **fuzzy-matched** against
+existing memos:
+
+- An exact (case-insensitive) title or slug always wins.
+- Otherwise the closest match is used.
+- If several memos match closely, `stpl` lists the candidates (as clickable
+  links) and asks you to be more specific rather than guessing.
+
+## Output format
+
+Memos print as `📎 title[file://…]`, where the whole `title[path]` token is an
+OSC 8 hyperlink — clickable in terminals that support it, and harmless plain
+text where they don't. Errors print in red on stderr.
+
+## Development
+
+```sh
+cargo build
+cargo test
+cargo clippy
+```
+
+Module layout: `cli` (clap) · `config` · `memo` (model + paths) · `store`
+(filesystem) · `resolve` (fuzzy) · `output` (color/links) · `editor` ·
+`commands/*` (one per subcommand).
