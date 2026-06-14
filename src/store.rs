@@ -2,9 +2,9 @@
 //!
 //! CONTRACT — implement the bodies; do not change public signatures.
 
-use std::path::PathBuf;
+use std::{fs, path::PathBuf};
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, bail};
 use chrono::NaiveDate;
 use walkdir::WalkDir;
 
