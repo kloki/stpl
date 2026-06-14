@@ -99,6 +99,16 @@ stpl new "Design doc"                     # opens $EDITOR
 
 Fuzzy-match a memo by title and open it in `$EDITOR`.
 
+### `stpl path <title>`
+
+Fuzzy-match a memo by title and print its absolute path — nothing else. Handy
+for scripting and agentic AI:
+
+```sh
+cat "$(stpl path standup)"
+nvim "$(stpl path 'design doc')"
+```
+
 ### `stpl del <title> [-y]`
 
 Delete a memo after confirmation. Projects remove the whole directory (the
@@ -127,7 +137,7 @@ stpl overview -a 2026-06-01 -b 2026-06-30
 
 ## Title matching
 
-Title arguments to `edit`, `del`, and `expand` are **fuzzy-matched** against
+Title arguments to `edit`, `path`, `del`, and `expand` are **fuzzy-matched** against
 existing memos:
 
 - An exact (case-insensitive) title or slug always wins.

@@ -29,6 +29,12 @@ pub enum Command {
         title: String,
     },
 
+    /// Print a memo's absolute path (useful for scripting/agentic use).
+    Path {
+        /// Title to fuzzy-match.
+        title: String,
+    },
+
     /// Delete a memo (asks for confirmation).
     Del {
         /// Title to fuzzy-match.

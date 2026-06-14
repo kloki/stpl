@@ -7,4 +7,5 @@ pub mod expand;
 pub mod init;
 pub mod new;
 pub mod overview;
+pub mod path;
 mod util;
