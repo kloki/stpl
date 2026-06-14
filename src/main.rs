@@ -10,6 +10,8 @@ mod output;
 mod resolve;
 mod store;
 
+use std::process;
+
 use clap::Parser;
 use cli::{Cli, Command};
 
@@ -18,7 +20,7 @@ fn main() {
     if let Err(err) = run(cli) {
         // Failed commands print in red on stderr.
         output::print_error(&err);
-        std::process::exit(1);
+        process::exit(1);
     }
 }
 

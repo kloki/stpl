@@ -2,7 +2,12 @@
 //!
 //! CONTRACT — implement the bodies; do not change public signatures.
 
-use std::{io::IsTerminal, path::Path, process::Command};
+use std::{
+    env,
+    io::{self, IsTerminal},
+    path::Path,
+    process::Command,
+};
 
 use anyhow::{Result, anyhow};
 
@@ -23,7 +28,7 @@ pub fn editor_command() -> Option<String> {
 
 /// Read an environment variable, treating empty/whitespace-only as unset.
 fn env_nonempty(key: &str) -> Option<String> {
-    std::env::var(key).ok().filter(|v| !v.trim().is_empty())
+    env::var(key).ok().filter(|v| !v.trim().is_empty())
 }
 
 /// Open `path` in the user's editor, inheriting stdio, and wait for it to
@@ -37,7 +42,7 @@ pub fn open(path: &Path) -> Result<()> {
 
     // Without a TTY there is no interactive editor to fall into, so refuse
     // rather than spawning a terminal editor that would immediately fail.
-    if !std::io::stdin().is_terminal() {
+    if !io::stdin().is_terminal() {
         return Err(StplError::NoEditor.into());
     }
 

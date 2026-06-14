@@ -59,11 +59,10 @@ pub fn create(
     }
 
     let dir = memo::dir_for(&config.memo_directory, date);
-    std::fs::create_dir_all(&dir)
-        .with_context(|| format!("creating directory '{}'", dir.display()))?;
+    fs::create_dir_all(&dir).with_context(|| format!("creating directory '{}'", dir.display()))?;
 
     let body = render_template(title, date, content);
-    std::fs::write(&path, body).with_context(|| format!("writing memo '{}'", path.display()))?;
+    fs::write(&path, body).with_context(|| format!("writing memo '{}'", path.display()))?;
     Ok(path)
 }
 
@@ -104,7 +103,7 @@ pub fn render_template(title: &str, date: NaiveDate, content: Option<&str>) -> S
 /// `MemoKind::Project`, removes the entire project directory.
 pub fn delete(memo: &Memo) -> Result<()> {
     match memo.kind {
-        MemoKind::File => std::fs::remove_file(&memo.path)
+        MemoKind::File => fs::remove_file(&memo.path)
             .with_context(|| format!("deleting '{}'", memo.path.display()))?,
         MemoKind::Project => {
             // The project directory is the parent of `project.md`.
@@ -112,7 +111,7 @@ pub fn delete(memo: &Memo) -> Result<()> {
                 .path
                 .parent()
                 .context("project memo has no parent directory")?;
-            std::fs::remove_dir_all(dir)
+            fs::remove_dir_all(dir)
                 .with_context(|| format!("deleting project '{}'", dir.display()))?;
         }
     }
@@ -126,7 +125,7 @@ pub fn delete(memo: &Memo) -> Result<()> {
 /// already exists, and refuses to expand a memo that is already a project.
 pub fn expand(memo: &Memo) -> Result<PathBuf> {
     if memo.kind == MemoKind::Project {
-        anyhow::bail!("'{}' is already a project", memo.title);
+        bail!("'{}' is already a project", memo.title);
     }
 
     // `<stem>/` lives next to the `.md`, named after the file stem.
@@ -150,9 +149,9 @@ pub fn expand(memo: &Memo) -> Result<PathBuf> {
         return Err(StplError::Collision(target).into());
     }
 
-    std::fs::create_dir_all(&project_dir)
+    fs::create_dir_all(&project_dir)
         .with_context(|| format!("creating project directory '{}'", project_dir.display()))?;
-    std::fs::rename(&memo.path, &target)
+    fs::rename(&memo.path, &target)
         .with_context(|| format!("moving '{}' to '{}'", memo.path.display(), target.display()))?;
     Ok(target)
 }
@@ -214,7 +213,7 @@ mod tests {
         delete(&memos[0]).unwrap();
         assert!(!path.exists());
 
-        let _ = std::fs::remove_dir_all(&tmp);
+        let _ = fs::remove_dir_all(&tmp);
     }
 
     #[test]
@@ -247,6 +246,6 @@ mod tests {
         // Refuse to expand an existing project.
         assert!(expand(&project).is_err());
 
-        let _ = std::fs::remove_dir_all(&tmp);
+        let _ = fs::remove_dir_all(&tmp);
     }
 }

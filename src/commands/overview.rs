@@ -2,17 +2,24 @@
 //!
 //! CONTRACT — implement `run`; do not change its signature.
 
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, env, fs};
 
 use anyhow::{Result, anyhow};
 use chrono::NaiveDate;
+use serde::Serialize;
 
 use crate::{
-    cli::Format, commands::util, editor, error::StplError, memo::Memo, output::Style, store,
+    cli::Format,
+    commands::util,
+    editor,
+    error::StplError,
+    memo::Memo,
+    output::{self, Style},
+    store,
 };
 
 /// A single `<year>/<week>` group, serialized for `--format json`.
-#[derive(serde::Serialize)]
+#[derive(Serialize)]
 struct Group {
     year: i32,
     week: u32,
@@ -63,8 +70,8 @@ pub fn run(format: Format, after: Option<&str>, before: Option<&str>) -> Result<
         }
         Format::Editor => {
             let md = render_markdown(&groups);
-            let path = std::env::temp_dir().join("stpl-overview.md");
-            std::fs::write(&path, md)?;
+            let path = env::temp_dir().join("stpl-overview.md");
+            fs::write(&path, md)?;
             editor::open(&path)?;
         }
     }
@@ -95,7 +102,7 @@ fn render_text(style: &Style, groups: &[Group]) {
 }
 
 fn output_no_memos(style: &Style) {
-    crate::output::success(style, "no memos found");
+    output::success(style, "no memos found");
 }
 
 fn render_markdown(groups: &[Group]) -> String {

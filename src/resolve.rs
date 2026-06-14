@@ -2,9 +2,11 @@
 //!
 //! CONTRACT — implement the bodies; do not change public signatures.
 
+use std::cmp::Reverse;
+
 use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
 
-use crate::{config::Config, error::StplError, memo::Memo};
+use crate::{config::Config, error::StplError, memo::Memo, store};
 
 /// Resolve a free-form `query` to exactly one memo.
 ///
@@ -19,8 +21,7 @@ use crate::{config::Config, error::StplError, memo::Memo};
 ///
 /// Callers render `Ambiguous.matches` as clickable memo lines.
 pub fn resolve_one(config: &Config, query: &str) -> Result<Memo, StplError> {
-    let memos =
-        crate::store::list_all(config).map_err(|_| StplError::NotFound(query.to_string()))?;
+    let memos = store::list_all(config).map_err(|_| StplError::NotFound(query.to_string()))?;
 
     // 1+2. Case-insensitive exact match on title OR slug.
     let needle = query.to_lowercase();
@@ -38,7 +39,7 @@ pub fn resolve_one(config: &Config, query: &str) -> Result<Memo, StplError> {
         .filter_map(|m| matcher.fuzzy_match(&m.title, query).map(|s| (s, m)))
         .filter(|(s, _)| *s > 0)
         .collect();
-    scored.sort_by_key(|s| std::cmp::Reverse(s.0));
+    scored.sort_by_key(|s| Reverse(s.0));
 
     // 4. Decide based on count / margin.
     match scored.len() {

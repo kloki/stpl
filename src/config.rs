@@ -2,15 +2,19 @@
 //!
 //! CONTRACT — implement the bodies; do not change public signatures.
 
-use std::path::{Path, PathBuf};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 use anyhow::{Context, Result};
+use serde::{Deserialize, Serialize};
 
 use crate::error::StplError;
 
 /// Runtime configuration. `memo_directory` is always an absolute path (with
 /// `~` expanded) by the time a `Config` exists.
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     /// Root directory holding all memos. Default: `~/stpls`.
     #[serde(default = "default_memo_directory")]
@@ -55,7 +59,7 @@ impl Config {
     pub fn load() -> Result<Config> {
         let path = Self::path()?;
         let mut config = if path.exists() {
-            let text = std::fs::read_to_string(&path)
+            let text = fs::read_to_string(&path)
                 .with_context(|| format!("reading config '{}'", path.display()))?;
             toml::from_str(&text).with_context(|| format!("parsing config '{}'", path.display()))?
         } else {
@@ -88,11 +92,11 @@ pub fn init() -> Result<PathBuf> {
         return Err(StplError::ConfigExists(path).into());
     }
     if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent)
+        fs::create_dir_all(parent)
             .with_context(|| format!("creating config directory '{}'", parent.display()))?;
     }
     let text = toml::to_string_pretty(&Config::default()).context("serializing default config")?;
-    std::fs::write(&path, text).with_context(|| format!("writing config '{}'", path.display()))?;
+    fs::write(&path, text).with_context(|| format!("writing config '{}'", path.display()))?;
     Ok(path)
 }
 

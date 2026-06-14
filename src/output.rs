@@ -2,7 +2,11 @@
 //!
 //! CONTRACT — implement the bodies; do not change public signatures.
 
-use std::io::IsTerminal;
+use std::{
+    env,
+    io::{self, IsTerminal},
+    path::Path,
+};
 
 use anstyle::{AnsiColor, Color, Style as AnsiStyle};
 
@@ -26,8 +30,8 @@ impl Style {
     /// - `emoji`  = !config.disable_emoji
     /// - `hyperlinks` = stdout.is_terminal()  (fall back to bare path otherwise)
     pub fn from_config(config: &Config) -> Style {
-        let is_tty = std::io::stdout().is_terminal();
-        let no_color = std::env::var_os("NO_COLOR")
+        let is_tty = io::stdout().is_terminal();
+        let no_color = env::var_os("NO_COLOR")
             .map(|v| !v.is_empty())
             .unwrap_or(false);
         Style {
@@ -40,7 +44,7 @@ impl Style {
     /// Render `text` as an OSC 8 hyperlink to `file://<abs path>` when
     /// `hyperlinks` is on; otherwise return `text` unchanged. The `path`
     /// must be absolute; spaces are percent-encoded.
-    pub fn link(&self, text: &str, path: &std::path::Path) -> String {
+    pub fn link(&self, text: &str, path: &Path) -> String {
         if !self.hyperlinks {
             return text.to_string();
         }

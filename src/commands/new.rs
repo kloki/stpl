@@ -3,6 +3,7 @@
 //! CONTRACT — implement `run`; do not change its signature.
 
 use anyhow::Result;
+use chrono::Local;
 
 use crate::{commands::util, editor, memo, output, store};
 
@@ -13,7 +14,7 @@ use crate::{commands::util, editor, memo, output, store};
 pub fn run(title: &str, content: Option<&str>) -> Result<()> {
     let (config, style) = util::config_and_style()?;
     let slug = memo::slugify(title)?;
-    let date = chrono::Local::now().date_naive();
+    let date = Local::now().date_naive();
     let path = store::create(&config, date, &slug, title, content)?;
 
     match content {

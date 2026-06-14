@@ -5,11 +5,12 @@
 use std::path::{Path, PathBuf};
 
 use chrono::{Datelike, NaiveDate};
+use serde::Serialize;
 
 use crate::error::StplError;
 
 /// Whether a memo is a single file or an expanded project directory.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum MemoKind {
     /// A `<iso_date>-<slug>.md` file.
@@ -19,7 +20,7 @@ pub enum MemoKind {
 }
 
 /// A single memo discovered on disk.
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Memo {
     /// Human-readable display title (slug with `-`→space, title-cased).
     pub title: String,
