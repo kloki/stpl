@@ -35,6 +35,9 @@ pub enum Command {
         title: String,
     },
 
+    /// Commit, pull, and push the memo directory (git-backed).
+    Sync,
+
     /// Delete a memo (asks for confirmation).
     Del {
         /// Title to fuzzy-match.

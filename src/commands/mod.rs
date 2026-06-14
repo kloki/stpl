@@ -8,4 +8,5 @@ pub mod init;
 pub mod new;
 pub mod overview;
 pub mod path;
+pub mod sync;
 mod util;

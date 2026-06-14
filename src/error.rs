@@ -35,4 +35,14 @@ pub enum StplError {
     /// A supplied date could not be parsed.
     #[error("invalid date '{0}' (expected YYYY-MM-DD)")]
     InvalidDate(String),
+
+    /// The memo directory is not a git repository (needed by `stpl sync`).
+    #[error("'{0}' is not a git repository")]
+    NotAGitRepo(PathBuf),
+
+    /// `git pull` left unmerged paths that need manual resolution.
+    #[error(
+        "git pull produced merge conflicts in '{0}' — resolve them, then run `stpl sync` again"
+    )]
+    MergeConflict(PathBuf),
 }

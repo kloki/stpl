@@ -10,12 +10,6 @@ matching, and structured JSON when you need it.
 
 ## Install
 
-```sh
-cargo install --path .
-# or, from the repo:
-cargo build --release   # binary at target/release/stpl
-```
-
 ### Binaries
 
 Check [Releases](https://github.com/kloki/stpl/releases) for binaries and installers.
@@ -124,6 +118,25 @@ prompt makes this explicit). Pass `-y/--yes` to skip the prompt; without a TTY,
 Turn a single-file memo into a **project** directory:
 `…-release.md` → `…-release/project.md`. Useful when a note grows into something
 with attachments or multiple files.
+
+### `stpl sync`
+
+Keep your notes in sync through a git remote (e.g. GitHub), assuming the memo
+directory is a git repository. In one command it runs **commit → pull → push**:
+
+1. `git add -A` and commit any local changes with a timestamped message
+   (skipped when there's nothing to commit).
+2. `git pull` to integrate remote changes. If the pull hits merge conflicts,
+   `stpl` stops and tells you to resolve them in the memo directory, then run
+   `stpl sync` again — it does **not** push a conflicted tree.
+3. `git push` to publish.
+
+If the memo directory isn't a git repo yet, `stpl sync` prints the one-time
+setup steps (`git init`, add a remote, initial commit, `push -u`) instead.
+
+```sh
+stpl sync
+```
 
 ### `stpl overview [-f <format>] [-a <after>] [-b <before>]`
 
