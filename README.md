@@ -16,6 +16,10 @@ cargo install --path .
 cargo build --release   # binary at target/release/stpl
 ```
 
+### Binaries
+
+Check [Releases](https://github.com/kloki/stpl/releases) for binaries and installers.
+
 ## Quick start
 
 ```sh
