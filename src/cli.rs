@@ -64,6 +64,9 @@ pub enum Command {
         /// Only show memos on or before this date (YYYY-MM-DD).
         #[arg(short = 'b', long = "before")]
         before: Option<String>,
+        /// Only show memos that have at least one of these tags (repeatable).
+        #[arg(short = 't', long = "tag")]
+        tags: Vec<String>,
     },
 }
 

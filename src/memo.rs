@@ -2,7 +2,10 @@
 //!
 //! CONTRACT — implement the bodies; do not change public signatures.
 
-use std::path::{Path, PathBuf};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 use chrono::{Datelike, NaiveDate};
 use serde::Serialize;
@@ -36,6 +39,8 @@ pub struct Memo {
     pub path: PathBuf,
     /// File vs project.
     pub kind: MemoKind,
+    /// Tags parsed from the YAML frontmatter (empty when none / unreadable).
+    pub tags: Vec<String>,
 }
 
 impl Memo {
@@ -75,10 +80,59 @@ impl Memo {
             date,
             year: date.iso_week().year(),
             week: date.iso_week().week(),
+            tags: read_tags(path),
             path: path.to_path_buf(),
             kind,
         })
     }
+}
+
+/// Read a memo file and parse its frontmatter `tags`. Best-effort: returns an
+/// empty vec when the file is absent or unreadable (e.g. `from_path` called on
+/// a path that doesn't exist yet).
+fn read_tags(path: &Path) -> Vec<String> {
+    match fs::read_to_string(path) {
+        Ok(content) => parse_tags(&content),
+        Err(_) => Vec::new(),
+    }
+}
+
+/// Parse the inline `tags: [a, b, c]` list from a memo's YAML frontmatter.
+///
+/// Only the leading frontmatter block (delimited by `---` lines) is scanned,
+/// and only the inline `[..]` form is understood — matching what `stpl` itself
+/// writes. Surrounding whitespace and optional quotes are stripped from each
+/// tag; empty items are dropped. Returns an empty vec when there is no
+/// frontmatter or no `tags:` line.
+fn parse_tags(content: &str) -> Vec<String> {
+    // Frontmatter must be at the very top: a `---` line, then the block, then a
+    // closing `---` line.
+    let rest = match content.strip_prefix("---\n") {
+        Some(rest) => rest,
+        None => return Vec::new(),
+    };
+
+    for line in rest.lines() {
+        let trimmed = line.trim();
+        if trimmed == "---" {
+            // End of frontmatter without a `tags:` line.
+            break;
+        }
+        if let Some(value) = trimmed.strip_prefix("tags:") {
+            let value = value.trim();
+            let inner = match value.strip_prefix('[').and_then(|v| v.strip_suffix(']')) {
+                Some(inner) => inner,
+                None => return Vec::new(),
+            };
+            return inner
+                .split(',')
+                .map(|t| t.trim().trim_matches(|c| c == '"' || c == '\'').trim())
+                .filter(|t| !t.is_empty())
+                .map(|t| t.to_string())
+                .collect();
+        }
+    }
+    Vec::new()
 }
 
 /// Parse a `<iso_date>-<slug>` stem into its date and slug components.
@@ -258,6 +312,37 @@ mod tests {
         assert!(Memo::from_path(Path::new("/tmp/not-a-date-here.md")).is_none());
         // project.md whose parent doesn't parse.
         assert!(Memo::from_path(Path::new("/tmp/random-dir/project.md")).is_none());
+    }
+
+    #[test]
+    fn parse_tags_inline_list() {
+        let content = "---\ntitle: T\ndate: 2026-06-14\ntags: [work, urgent]\n---\n\n# T\n";
+        assert_eq!(parse_tags(content), vec!["work", "urgent"]);
+    }
+
+    #[test]
+    fn parse_tags_empty_list() {
+        let content = "---\ntitle: T\ndate: 2026-06-14\ntags: []\n---\n\n# T\n";
+        assert!(parse_tags(content).is_empty());
+    }
+
+    #[test]
+    fn parse_tags_strips_quotes_and_spaces() {
+        let content = "---\ntags: [ \"work\" , 'home' ,  , urgent ]\n---\n";
+        assert_eq!(parse_tags(content), vec!["work", "home", "urgent"]);
+    }
+
+    #[test]
+    fn parse_tags_missing_line_or_frontmatter() {
+        // No `tags:` line in the frontmatter.
+        let no_tags = "---\ntitle: T\ndate: 2026-06-14\n---\n\n# T\n";
+        assert!(parse_tags(no_tags).is_empty());
+        // No leading frontmatter at all.
+        let no_fm = "# T\n\ntags: [work]\n";
+        assert!(parse_tags(no_fm).is_empty());
+        // `tags:` present but not the inline form.
+        let block = "---\ntags:\n  - work\n---\n";
+        assert!(parse_tags(block).is_empty());
     }
 
     #[test]

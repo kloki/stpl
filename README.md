@@ -1,6 +1,6 @@
 # 📎 stpl (staple)
 
-Quick creation and management of markdown notes and memos from the command line.
+Mgmt notes and memos from the command line that work for me (and agentic ai).
 
 `stpl` is **filesystem-based** — every memo is a plain `.md` file in a dated
 folder tree, so your notes stay yours, readable and editable with any tool
@@ -74,6 +74,10 @@ tags: []
 
 blocked on CI
 ```
+
+Add tags by editing the `tags:` line into an inline list, e.g.
+`tags: [work, urgent]`. They're surfaced by `stpl overview` and can be filtered
+on with `-t/--tag`.
 
 ## Configuration
 
@@ -157,18 +161,24 @@ setup steps (`git init`, add a remote, initial commit, `push -u`) instead.
 stpl sync
 ```
 
-### `stpl overview [-f <format>] [-a <after>] [-b <before>]`
+### `stpl overview [-f <format>] [-a <after>] [-b <before>] [-t <tag>]`
 
-List memos grouped by `year/week`.
+List memos grouped by `year/week`. Tags from a memo's frontmatter are shown
+inline after its title (when it has any).
 
 - `-f, --format` — `text` (default, agent-friendly), `json`, `markdown`, or
   `editor` (renders markdown and opens it in `$EDITOR`).
 - `-a, --after` / `-b, --before` — filter by date, inclusive, `YYYY-MM-DD`.
+- `-t, --tag` — keep only memos carrying this tag. Repeatable; matching is
+  case-insensitive and ORs across tags (a memo is shown if it has **any** of
+  them). Tags are read from the `tags: [..]` line in the frontmatter.
 
 ```sh
 stpl overview                            # text
 stpl overview -f json                    # machine-readable
 stpl overview -a 2026-06-01 -b 2026-06-30
+stpl overview -t work                    # only memos tagged `work`
+stpl overview -t work -t urgent          # tagged `work` OR `urgent`
 ```
 
 ## Title matching

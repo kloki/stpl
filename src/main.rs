@@ -37,6 +37,7 @@ fn run(cli: Cli) -> anyhow::Result<()> {
             format,
             after,
             before,
-        } => commands::overview::run(format, after.as_deref(), before.as_deref()),
+            tags,
+        } => commands::overview::run(format, after.as_deref(), before.as_deref(), &tags),
     }
 }

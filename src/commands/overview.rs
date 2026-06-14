@@ -1,6 +1,4 @@
-//! `stpl overview -f <format> -a <after> -b <before>` — list memos.
-//!
-//! CONTRACT — implement `run`; do not change its signature.
+//! `stpl overview -f <format> -a <after> -b <before> -t <tag>` — list memos.
 
 use std::{collections::BTreeMap, env, fs};
 
@@ -27,7 +25,12 @@ struct Group {
 }
 
 /// List memos grouped by `<year>/<week>` folder.
-pub fn run(format: Format, after: Option<&str>, before: Option<&str>) -> Result<()> {
+pub fn run(
+    format: Format,
+    after: Option<&str>,
+    before: Option<&str>,
+    tags: &[String],
+) -> Result<()> {
     let (config, style) = util::config_and_style()?;
 
     let after = parse_date(after)?;
@@ -40,6 +43,14 @@ pub fn run(format: Format, after: Option<&str>, before: Option<&str>) -> Result<
 
     let mut memos = store::list_all(&config)?;
     memos.retain(|m| after.is_none_or(|a| m.date >= a) && before.is_none_or(|b| m.date <= b));
+    // Tag filter: keep memos carrying at least one of the requested tags (OR).
+    if !tags.is_empty() {
+        memos.retain(|m| {
+            m.tags
+                .iter()
+                .any(|mt| tags.iter().any(|t| t.eq_ignore_ascii_case(mt)))
+        });
+    }
 
     // Group by (year, week); BTreeMap keeps the headings sorted ascending.
     let mut grouped: BTreeMap<(i32, u32), Vec<Memo>> = BTreeMap::new();
@@ -96,9 +107,23 @@ fn render_text(style: &Style, groups: &[Group]) {
     for group in groups {
         anstream::println!("{}/{:02}", group.year, group.week);
         for memo in &group.memos {
-            anstream::println!("  {}", style.memo_line(memo));
+            anstream::println!("  {}{}", style.memo_line(memo), tags_suffix(&memo.tags));
         }
     }
+}
+
+/// `  #work #urgent` for a tagged memo, or an empty string when there are none,
+/// so tag-less memos render exactly as before.
+fn tags_suffix(tags: &[String]) -> String {
+    if tags.is_empty() {
+        return String::new();
+    }
+    let joined = tags
+        .iter()
+        .map(|t| format!("#{t}"))
+        .collect::<Vec<_>>()
+        .join(" ");
+    format!("  {joined}")
 }
 
 fn output_no_memos(style: &Style) {
@@ -115,7 +140,12 @@ fn render_markdown(groups: &[Group]) -> String {
         for memo in &group.memos {
             // file:// URL with spaces percent-encoded so links stay valid.
             let url = memo.path.to_string_lossy().replace(' ', "%20");
-            out.push_str(&format!("- [{}](file://{})\n", memo.title, url));
+            out.push_str(&format!(
+                "- [{}](file://{}){}\n",
+                memo.title,
+                url,
+                tags_suffix(&memo.tags)
+            ));
         }
     }
     out
