@@ -86,12 +86,12 @@ impl Memo {
 /// The first 10 chars must be `%Y-%m-%d`, followed by a `-`, then a non-empty
 /// slug. Returns `None` on any parse failure.
 fn parse_stem(stem: &str) -> Option<(NaiveDate, String)> {
-    // `2026-06-14` is exactly 10 characters; we need at least that plus a `-`
-    // and one slug character.
-    if stem.len() < 12 {
-        return None;
-    }
-    let (date_part, rest) = stem.split_at(10);
+    // `2026-06-14` is exactly 10 bytes; we need at least that plus a `-` and
+    // one slug character. `get(..10)` returns `None` (rather than panicking
+    // like `split_at`) when byte 10 is not a char boundary, e.g. for a foreign
+    // file whose name starts with a multibyte character.
+    let date_part = stem.get(..10)?;
+    let rest = &stem[10..];
     let date = NaiveDate::parse_from_str(date_part, "%Y-%m-%d").ok()?;
     // `rest` must begin with the separating `-` and have a slug after it.
     let slug = rest.strip_prefix('-')?;
@@ -258,5 +258,18 @@ mod tests {
         assert!(Memo::from_path(Path::new("/tmp/not-a-date-here.md")).is_none());
         // project.md whose parent doesn't parse.
         assert!(Memo::from_path(Path::new("/tmp/random-dir/project.md")).is_none());
+    }
+
+    #[test]
+    fn from_path_handles_multibyte_stems_without_panicking() {
+        // A foreign file whose name is >= 12 bytes but has a multibyte char
+        // straddling byte index 10 must be rejected, not panic. `日`/`本` are
+        // three bytes each, so `123456789日本` puts `日` across bytes 9..12.
+        assert!(parse_stem("123456789日本").is_none());
+        assert!(Memo::from_path(Path::new("/tmp/123456789日本.md")).is_none());
+        // A genuine date prefix followed by a multibyte slug still parses.
+        let (date, slug) = parse_stem("2026-06-14-café").expect("valid date prefix");
+        assert_eq!(date, NaiveDate::from_ymd_opt(2026, 6, 14).unwrap());
+        assert_eq!(slug, "café");
     }
 }
