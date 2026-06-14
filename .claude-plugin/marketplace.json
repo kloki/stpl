@@ -1,0 +1,12 @@
+{
+  "name": "stpl",
+  "description": "Plugins for the stpl markdown-memo CLI.",
+  "owner": { "name": "Koen Klinkers" },
+  "plugins": [
+    {
+      "name": "stpl",
+      "source": "./claude-plugin",
+      "description": "Create and manage markdown memos with the stpl CLI."
+    }
+  ]
+}

@@ -14,6 +14,25 @@ matching, and structured JSON when you need it.
 
 Check [Releases](https://github.com/kloki/stpl/releases) for binaries and installers.
 
+## Claude Code plugin
+
+This repo ships a [Claude Code](https://claude.com/claude-code) plugin so Claude
+can drive `stpl` for you. It bundles two skills:
+
+- **`/stpl:setup-stpl`** — install `stpl` and create/configure its config.
+- **`/stpl:stpl`** — day-to-day use: `overview` (list), `new` (create), and
+  `path` (find/read) memos.
+
+Install it from this repo's marketplace:
+
+```sh
+claude plugin marketplace add https://github.com/kloki/stpl
+claude plugin install stpl@stpl
+# then, inside Claude Code:
+/stpl:setup-stpl
+/stpl:stpl
+```
+
 ## Quick start
 
 ```sh

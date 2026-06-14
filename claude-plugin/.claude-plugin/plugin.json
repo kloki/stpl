@@ -1,0 +1,10 @@
+{
+  "name": "stpl",
+  "description": "Create and manage markdown memos with the stpl CLI.",
+  "version": "0.1.0",
+  "author": { "name": "Koen Klinkers" },
+  "homepage": "https://github.com/kloki/stpl",
+  "repository": "https://github.com/kloki/stpl",
+  "license": "MIT",
+  "keywords": ["notes", "memos", "markdown", "cli"]
+}
