@@ -33,6 +33,7 @@ fn run(cli: Cli) -> anyhow::Result<()> {
         Command::Sync => commands::sync::run(),
         Command::Del { title, yes } => commands::del::run(&title, yes),
         Command::Expand { title } => commands::expand::run(&title),
+        Command::Tag { title, tags } => commands::tag::run(&title, &tags),
         Command::Overview {
             format,
             after,

@@ -135,6 +135,55 @@ fn parse_tags(content: &str) -> Vec<String> {
     Vec::new()
 }
 
+/// Render the inline frontmatter `tags:` line for `tags`, e.g. `tags: [a, b]`.
+fn render_tags_line(tags: &[String]) -> String {
+    format!("tags: [{}]", tags.join(", "))
+}
+
+/// Return `content` with its frontmatter `tags:` list set to `tags` (inline
+/// form, matching what the template writes).
+///
+/// - If the leading frontmatter has an inline `tags:` line, it is replaced in
+///   place (other lines are preserved verbatim).
+/// - If the frontmatter has no `tags:` line, one is inserted just before the
+///   closing `---`.
+/// - If `content` has no leading frontmatter at all, a fresh block is prepended.
+pub fn write_tags(content: &str, tags: &[String]) -> String {
+    let tags_line = render_tags_line(tags);
+
+    // No leading frontmatter: prepend a fresh block.
+    let body = match content.strip_prefix("---\n") {
+        Some(body) => body,
+        None => return format!("---\n{}\n---\n\n{}", tags_line, content),
+    };
+
+    let mut out = String::from("---\n");
+    let mut handled = false;
+    let mut in_frontmatter = true;
+    for line in body.split_inclusive('\n') {
+        let trimmed = line.trim_end_matches('\n').trim();
+        if in_frontmatter && trimmed == "---" {
+            // Closing fence: insert the tags line here if we never saw one.
+            if !handled {
+                out.push_str(&tags_line);
+                out.push('\n');
+                handled = true;
+            }
+            out.push_str(line);
+            in_frontmatter = false;
+            continue;
+        }
+        if in_frontmatter && !handled && trimmed.strip_prefix("tags:").is_some() {
+            out.push_str(&tags_line);
+            out.push('\n');
+            handled = true;
+            continue;
+        }
+        out.push_str(line);
+    }
+    out
+}
+
 /// Parse a `<iso_date>-<slug>` stem into its date and slug components.
 ///
 /// The first 10 chars must be `%Y-%m-%d`, followed by a `-`, then a non-empty
@@ -343,6 +392,36 @@ mod tests {
         // `tags:` present but not the inline form.
         let block = "---\ntags:\n  - work\n---\n";
         assert!(parse_tags(block).is_empty());
+    }
+
+    #[test]
+    fn write_tags_replaces_inline_list() {
+        let content = "---\ntitle: T\ndate: 2026-06-14\ntags: []\n---\n\n# T\n";
+        let out = write_tags(content, &["work".to_string(), "urgent".to_string()]);
+        assert_eq!(
+            out,
+            "---\ntitle: T\ndate: 2026-06-14\ntags: [work, urgent]\n---\n\n# T\n"
+        );
+        // The written form round-trips through the parser.
+        assert_eq!(parse_tags(&out), vec!["work", "urgent"]);
+    }
+
+    #[test]
+    fn write_tags_inserts_when_missing() {
+        let content = "---\ntitle: T\ndate: 2026-06-14\n---\n\n# T\n";
+        let out = write_tags(content, &["work".to_string()]);
+        assert_eq!(
+            out,
+            "---\ntitle: T\ndate: 2026-06-14\ntags: [work]\n---\n\n# T\n"
+        );
+    }
+
+    #[test]
+    fn write_tags_prepends_when_no_frontmatter() {
+        let content = "# T\n\nbody\n";
+        let out = write_tags(content, &["work".to_string()]);
+        assert_eq!(out, "---\ntags: [work]\n---\n\n# T\n\nbody\n");
+        assert_eq!(parse_tags(&out), vec!["work"]);
     }
 
     #[test]

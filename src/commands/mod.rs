@@ -9,4 +9,5 @@ pub mod new;
 pub mod overview;
 pub mod path;
 pub mod sync;
+pub mod tag;
 mod util;

@@ -53,6 +53,15 @@ pub enum Command {
         title: String,
     },
 
+    /// Add one or more tags to a memo (duplicates are ignored).
+    Tag {
+        /// Title to fuzzy-match.
+        title: String,
+        /// Tag(s) to add.
+        #[arg(required = true)]
+        tags: Vec<String>,
+    },
+
     /// Print an overview of memos grouped by folder.
     Overview {
         /// Output format.

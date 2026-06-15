@@ -40,6 +40,7 @@ stpl init                              # write ~/.config/stpl.toml
 stpl new "Standup notes" -m "blocked on CI"
 stpl overview                          # list everything, grouped by week
 stpl edit standup                      # fuzzy-match and open in $EDITOR
+stpl tag standup work urgent           # add tags (duplicates ignored)
 ```
 
 For more
@@ -80,8 +81,8 @@ tags: []
 
 ## Title matching
 
-Title arguments to `edit`, `path`, `del`, and `expand` are **fuzzy-matched** against
-existing memos:
+Title arguments to `edit`, `path`, `del`, `expand`, and `tag` are **fuzzy-matched**
+against existing memos:
 
 - An exact (case-insensitive) title or slug always wins.
 - Otherwise the closest match is used.

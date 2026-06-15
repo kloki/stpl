@@ -99,6 +99,27 @@ pub fn render_template(title: &str, date: NaiveDate, content: Option<&str>) -> S
     out
 }
 
+/// Add `new_tags` to a memo's frontmatter `tags:` list, rewriting the file in
+/// place. Existing tags are kept (in order) and duplicates are ignored — both
+/// against tags already on the memo and within `new_tags` itself. Blank tags
+/// are dropped. Returns the resulting full tag list.
+pub fn add_tags(memo: &Memo, new_tags: &[String]) -> Result<Vec<String>> {
+    let content = fs::read_to_string(&memo.path)
+        .with_context(|| format!("reading '{}'", memo.path.display()))?;
+
+    let mut merged = memo.tags.clone();
+    for tag in new_tags {
+        let tag = tag.trim();
+        if !tag.is_empty() && !merged.iter().any(|existing| existing == tag) {
+            merged.push(tag.to_string());
+        }
+    }
+
+    let updated = memo::write_tags(&content, &merged);
+    fs::write(&memo.path, updated).with_context(|| format!("writing '{}'", memo.path.display()))?;
+    Ok(merged)
+}
+
 /// Delete a memo. For `MemoKind::File`, removes the `.md` file. For
 /// `MemoKind::Project`, removes the entire project directory.
 pub fn delete(memo: &Memo) -> Result<()> {
@@ -212,6 +233,47 @@ mod tests {
 
         delete(&memos[0]).unwrap();
         assert!(!path.exists());
+
+        let _ = fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn add_tags_merges_and_dedupes() {
+        let tmp = std::env::temp_dir().join(format!("stpl-tags-{}", std::process::id()));
+        let config = Config {
+            memo_directory: tmp.clone(),
+            disable_emoji: true,
+            disable_color: true,
+        };
+        let date = NaiveDate::from_ymd_opt(2026, 6, 14).unwrap();
+
+        let path = create(&config, date, "my-note", "My Note", None).unwrap();
+
+        // First add: two fresh tags.
+        let memo = Memo::from_path(&path).unwrap();
+        let all = add_tags(&memo, &["work".to_string(), "urgent".to_string()]).unwrap();
+        assert_eq!(all, vec!["work", "urgent"]);
+
+        // Re-read and add overlapping + blank + duplicate-within-input tags.
+        let memo = Memo::from_path(&path).unwrap();
+        assert_eq!(memo.tags, vec!["work", "urgent"]);
+        let all = add_tags(
+            &memo,
+            &[
+                "work".to_string(),
+                " ".to_string(),
+                "home".to_string(),
+                "home".to_string(),
+            ],
+        )
+        .unwrap();
+        assert_eq!(all, vec!["work", "urgent", "home"]);
+
+        // The on-disk file reflects the merged set.
+        assert_eq!(
+            Memo::from_path(&path).unwrap().tags,
+            vec!["work", "urgent", "home"]
+        );
 
         let _ = fs::remove_dir_all(&tmp);
     }
