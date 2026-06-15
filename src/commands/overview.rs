@@ -254,25 +254,83 @@ fn render_markdown(groups: &[Group]) -> String {
         return "# Memos\n\n_No memos found._\n".to_string();
     }
     let mut out = String::from("# Memos\n");
+    // Reference-style links keep the bullet lines short; the long `file://`
+    // URLs are collected and emitted at the end of each week section.
+    let mut refnum = 0;
     for group in groups {
         out.push_str(&format!("\n## {}/{:02}\n\n", group.year, group.week));
+        let mut refs = String::new();
         for memo in &group.memos {
+            refnum += 1;
             // file:// URL with spaces percent-encoded so links stay valid.
             let url = memo.path.to_string_lossy().replace(' ', "%20");
             out.push_str(&format!(
-                "- [{}](file://{}){}\n",
+                "- [{}][{}]{}\n",
                 memo.title,
-                url,
+                refnum,
                 tags_suffix(&memo.tags)
             ));
+            refs.push_str(&format!("[{refnum}]: file://{url}\n"));
         }
+        out.push('\n');
+        out.push_str(&refs);
     }
     out
 }
 
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+
     use super::*;
+    use crate::memo::MemoKind;
+
+    fn memo(title: &str, path: &str, tags: &[&str]) -> Memo {
+        Memo {
+            title: title.to_string(),
+            slug: "x".to_string(),
+            date: NaiveDate::from_ymd_opt(2026, 6, 15).unwrap(),
+            year: 2026,
+            week: 25,
+            path: PathBuf::from(path),
+            kind: MemoKind::File,
+            tags: tags.iter().map(|t| t.to_string()).collect(),
+        }
+    }
+
+    #[test]
+    fn render_markdown_uses_reference_links_grouped_per_section() {
+        let groups = vec![
+            Group {
+                year: 2026,
+                week: 25,
+                memos: vec![
+                    memo("Alpha", "/m/a.md", &["api", "hub"]),
+                    memo("Beta", "/m/b.md", &[]),
+                ],
+            },
+            Group {
+                year: 2026,
+                week: 26,
+                memos: vec![memo("Gamma", "/m/c.md", &["rest"])],
+            },
+        ];
+        let md = render_markdown(&groups);
+        assert_eq!(
+            md,
+            "# Memos\n\
+             \n## 2026/25\n\n\
+             - [Alpha][1]  #api #hub\n\
+             - [Beta][2]\n\
+             \n\
+             [1]: file:///m/a.md\n\
+             [2]: file:///m/b.md\n\
+             \n## 2026/26\n\n\
+             - [Gamma][3]  #rest\n\
+             \n\
+             [3]: file:///m/c.md\n"
+        );
+    }
 
     #[test]
     fn content_preview_strips_frontmatter_and_leading_blanks() {
