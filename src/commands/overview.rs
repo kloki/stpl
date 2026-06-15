@@ -80,9 +80,6 @@ pub fn run(
         Format::Markdown => {
             anstream::println!("{}", render_markdown(&groups));
         }
-        Format::MarkdownVerbose => {
-            anstream::println!("{}", render_markdown_verbose(&groups));
-        }
         Format::Editor => {
             let md = render_markdown(&groups);
             let path = env::temp_dir().join("stpl-overview.md");
@@ -177,78 +174,6 @@ fn output_no_memos(style: &Style) {
     output::success(style, "no memos found");
 }
 
-/// Number of leading lines of each memo shown as a preview in verbose markdown.
-const PREVIEW_LINES: usize = 10;
-
-/// Drop a leading YAML frontmatter block (`---` … `---`) from `content`,
-/// returning the body. Returns `content` unchanged when there is no
-/// frontmatter or its closing fence is missing.
-fn strip_frontmatter(content: &str) -> &str {
-    let Some(rest) = content.strip_prefix("---\n") else {
-        return content;
-    };
-    let mut offset = 0;
-    for line in rest.split_inclusive('\n') {
-        offset += line.len();
-        if line.trim_end_matches('\n').trim() == "---" {
-            return &rest[offset..];
-        }
-    }
-    content
-}
-
-/// The first `n` non-frontmatter lines of a memo, with leading blank lines
-/// trimmed so the preview starts at real content.
-fn content_preview(content: &str, n: usize) -> String {
-    strip_frontmatter(content)
-        .lines()
-        .skip_while(|l| l.trim().is_empty())
-        .take(n)
-        .collect::<Vec<_>>()
-        .join("\n")
-}
-
-/// Verbose markdown: one section per memo, each with an H1 title carrying its
-/// tags (as inline code), a `file://` link, and a preview of the file's first
-/// [`PREVIEW_LINES`] lines. Memos keep the grouped sort order (week, then date).
-fn render_markdown_verbose(groups: &[Group]) -> String {
-    if groups.is_empty() {
-        return "_No memos found._\n".to_string();
-    }
-    let mut out = String::new();
-    for memo in groups.iter().flat_map(|g| &g.memos) {
-        if !out.is_empty() {
-            out.push('\n');
-        }
-        // `# Title: `#tag` `#tag`` — the colon + tags only when there are tags.
-        out.push_str(&format!("# {}", memo.title));
-        if !memo.tags.is_empty() {
-            let tags = memo
-                .tags
-                .iter()
-                .map(|t| format!("`#{t}`"))
-                .collect::<Vec<_>>()
-                .join(" ");
-            out.push_str(&format!(": {tags}"));
-        }
-        out.push('\n');
-
-        // file:// URL with spaces percent-encoded so links stay valid.
-        let url = memo.path.to_string_lossy().replace(' ', "%20");
-        out.push_str(&format!("\n[file](file://{url})\n"));
-
-        // Preview the first lines of the memo body (frontmatter stripped).
-        // Best-effort: an unreadable file just yields an empty preview rather
-        // than failing the whole overview.
-        let content = fs::read_to_string(&memo.path).unwrap_or_default();
-        let preview = content_preview(&content, PREVIEW_LINES);
-        if !preview.is_empty() {
-            out.push_str(&format!("\n{preview}\n"));
-        }
-    }
-    out
-}
-
 fn render_markdown(groups: &[Group]) -> String {
     if groups.is_empty() {
         return "# Memos\n\n_No memos found._\n".to_string();
@@ -330,29 +255,5 @@ mod tests {
              \n\
              [3]: file:///m/c.md\n"
         );
-    }
-
-    #[test]
-    fn content_preview_strips_frontmatter_and_leading_blanks() {
-        let content = "---\ntitle: Hub API Architecture\ndate: 2026-06-15\ntags: [api, hub]\n---\n\n# Hub API Architecture\n\nBody line.\n";
-        assert_eq!(
-            content_preview(content, 10),
-            "# Hub API Architecture\n\nBody line."
-        );
-    }
-
-    #[test]
-    fn content_preview_honors_line_limit() {
-        let content = "---\nt: x\n---\n\nl1\nl2\nl3\nl4\n";
-        assert_eq!(content_preview(content, 2), "l1\nl2");
-    }
-
-    #[test]
-    fn content_preview_without_frontmatter() {
-        assert_eq!(content_preview("# Title\n\nbody\n", 10), "# Title\n\nbody");
-        // Missing closing fence: nothing is stripped.
-        assert_eq!(content_preview("---\nt: x\nbody\n", 10), "---\nt: x\nbody");
-        // Empty frontmatter block.
-        assert_eq!(content_preview("---\n---\nhi\n", 10), "hi");
     }
 }

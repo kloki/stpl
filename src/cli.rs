@@ -87,8 +87,6 @@ pub enum Format {
     Json,
     /// Nicely formatted markdown.
     Markdown,
-    /// Verbose markdown: each memo as a section with a content preview.
-    MarkdownVerbose,
     /// Markdown rendered to a file and opened in $EDITOR.
     Editor,
 }
