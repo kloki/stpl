@@ -1,4 +1,4 @@
-//! `stpl overview -f <format> -a <after> -b <before> -t <tag>` — list memos.
+//! `stpl overview [format] -a <after> -b <before> -t <tag>` — list memos.
 
 use std::{collections::BTreeMap, env, fs};
 

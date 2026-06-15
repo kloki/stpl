@@ -17,12 +17,13 @@ List memos grouped by `year/week`.
 
 ```sh
 stpl overview                    # plain text (default)
-stpl overview -f json            # machine-readable — prefer this for parsing
+stpl overview json               # machine-readable — prefer this for parsing
 stpl overview -a 2026-06-01 -b 2026-06-30   # filter by date range (inclusive)
 stpl overview -t work            # only memos tagged `work`
 ```
 
-- `-f, --format` — `text` (default), `json`, `markdown`, or `editor`. **Avoid
+- The output **format** is an optional positional argument: `text` (default),
+  `json`, `markdown`, or `editor` — e.g. `stpl overview markdown`. **Avoid
   `editor`** in an agent context: it opens `$EDITOR` and blocks.
 - `-a, --after` / `-b, --before` — `YYYY-MM-DD`, inclusive.
 - `-t, --tag` — keep only memos with this tag (read from the frontmatter
@@ -30,7 +31,7 @@ stpl overview -t work            # only memos tagged `work`
   output each memo carries a `tags` array.
 
 When you need to inspect what notes exist before acting, use
-`stpl overview -f json` and parse it.
+`stpl overview json` and parse it.
 
 ## New — create a memo
 

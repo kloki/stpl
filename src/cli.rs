@@ -64,8 +64,8 @@ pub enum Command {
 
     /// Print an overview of memos grouped by folder.
     Overview {
-        /// Output format.
-        #[arg(short = 'f', long = "format", value_enum, default_value_t = Format::Text)]
+        /// Output format (default `text`).
+        #[arg(value_enum, default_value_t = Format::Text)]
         format: Format,
         /// Only show memos on or after this date (YYYY-MM-DD).
         #[arg(short = 'a', long = "after")]
