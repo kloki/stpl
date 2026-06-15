@@ -2,6 +2,7 @@
 
 use std::{collections::BTreeMap, env, fs};
 
+use anstyle::{AnsiColor, Color, Style as AnsiStyle};
 use anyhow::{Result, anyhow};
 use chrono::NaiveDate;
 use serde::Serialize;
@@ -99,21 +100,64 @@ fn parse_date(s: Option<&str>) -> Result<Option<NaiveDate>> {
     }
 }
 
+/// Render the human-facing `text` overview: a colored `<year> · week NN`
+/// heading per group, then one indented memo per line. The title is a clickable
+/// hyperlink (when the terminal supports it) — the raw path is never printed —
+/// and tags trail in color.
 fn render_text(style: &Style, groups: &[Group]) {
     if groups.is_empty() {
         output_no_memos(style);
         return;
     }
-    for group in groups {
-        anstream::println!("{}/{:02}", group.year, group.week);
+    for (i, group) in groups.iter().enumerate() {
+        // Blank line between groups for breathing room.
+        if i > 0 {
+            anstream::println!();
+        }
+        anstream::println!(
+            "{}",
+            heading(style, &format!("{} · week {:02}", group.year, group.week))
+        );
+        let bullet = if style.emoji { "📎" } else { "-" };
         for memo in &group.memos {
-            anstream::println!("  {}{}", style.memo_line(memo), tags_suffix(&memo.tags));
+            // The title is the clickable link; the path itself is not shown.
+            let title = style.link(&memo.title, &memo.path);
+            anstream::println!("  {bullet} {title}{}", colored_tags(style, &memo.tags));
         }
     }
 }
 
-/// `  #work #urgent` for a tagged memo, or an empty string when there are none,
-/// so tag-less memos render exactly as before.
+/// A bold-cyan group heading (plain text when color is disabled).
+fn heading(style: &Style, text: &str) -> String {
+    if !style.color {
+        return text.to_string();
+    }
+    let c = AnsiStyle::new()
+        .bold()
+        .fg_color(Some(Color::Ansi(AnsiColor::Cyan)));
+    format!("{c}{text}{c:#}")
+}
+
+/// `  #work #urgent` trailing a memo line, in magenta when color is enabled, or
+/// an empty string when there are no tags.
+fn colored_tags(style: &Style, tags: &[String]) -> String {
+    if tags.is_empty() {
+        return String::new();
+    }
+    let joined = tags
+        .iter()
+        .map(|t| format!("#{t}"))
+        .collect::<Vec<_>>()
+        .join(" ");
+    if !style.color {
+        return format!("  {joined}");
+    }
+    let c = AnsiStyle::new().fg_color(Some(Color::Ansi(AnsiColor::Magenta)));
+    format!("  {c}{joined}{c:#}")
+}
+
+/// `  #work #urgent` for a tagged memo (plain), or an empty string when there
+/// are none — used by the markdown renderer where ANSI color is inappropriate.
 fn tags_suffix(tags: &[String]) -> String {
     if tags.is_empty() {
         return String::new();
