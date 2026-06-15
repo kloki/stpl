@@ -23,8 +23,10 @@ stpl overview -t work            # only memos tagged `work`
 ```
 
 - The output **format** is an optional positional argument: `text` (default),
-  `json`, `markdown`, or `editor` — e.g. `stpl overview markdown`. **Avoid
-  `editor`** in an agent context: it opens `$EDITOR` and blocks.
+  `json`, `markdown`, `markdown-verbose`, or `editor` — e.g.
+  `stpl overview markdown`. `markdown-verbose` renders each memo as its own
+  section with a `file://` link and a preview of the file's first lines.
+  **Avoid `editor`** in an agent context: it opens `$EDITOR` and blocks.
 - `-a, --after` / `-b, --before` — `YYYY-MM-DD`, inclusive.
 - `-t, --tag` — keep only memos with this tag (read from the frontmatter
   `tags: [..]` line). Repeatable, case-insensitive, ORs across tags. In `json`

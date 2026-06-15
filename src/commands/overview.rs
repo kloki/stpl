@@ -80,6 +80,9 @@ pub fn run(
         Format::Markdown => {
             anstream::println!("{}", render_markdown(&groups));
         }
+        Format::MarkdownVerbose => {
+            anstream::println!("{}", render_markdown_verbose(&groups));
+        }
         Format::Editor => {
             let md = render_markdown(&groups);
             let path = env::temp_dir().join("stpl-overview.md");
@@ -172,6 +175,53 @@ fn tags_suffix(tags: &[String]) -> String {
 
 fn output_no_memos(style: &Style) {
     output::success(style, "no memos found");
+}
+
+/// Number of leading lines of each memo shown as a preview in verbose markdown.
+const PREVIEW_LINES: usize = 10;
+
+/// Verbose markdown: one section per memo, each with an H1 title carrying its
+/// tags (as inline code), a `file://` link, and a preview of the file's first
+/// [`PREVIEW_LINES`] lines. Memos keep the grouped sort order (week, then date).
+fn render_markdown_verbose(groups: &[Group]) -> String {
+    if groups.is_empty() {
+        return "_No memos found._\n".to_string();
+    }
+    let mut out = String::new();
+    for memo in groups.iter().flat_map(|g| &g.memos) {
+        if !out.is_empty() {
+            out.push('\n');
+        }
+        // `# Title: `#tag` `#tag`` — the colon + tags only when there are tags.
+        out.push_str(&format!("# {}", memo.title));
+        if !memo.tags.is_empty() {
+            let tags = memo
+                .tags
+                .iter()
+                .map(|t| format!("`#{t}`"))
+                .collect::<Vec<_>>()
+                .join(" ");
+            out.push_str(&format!(": {tags}"));
+        }
+        out.push('\n');
+
+        // file:// URL with spaces percent-encoded so links stay valid.
+        let url = memo.path.to_string_lossy().replace(' ', "%20");
+        out.push_str(&format!("\n[file](file://{url})\n"));
+
+        // Preview the first lines of the memo as-is. Best-effort: an unreadable
+        // file just yields an empty preview rather than failing the overview.
+        let preview = fs::read_to_string(&memo.path)
+            .unwrap_or_default()
+            .lines()
+            .take(PREVIEW_LINES)
+            .collect::<Vec<_>>()
+            .join("\n");
+        if !preview.is_empty() {
+            out.push_str(&format!("\n{preview}\n"));
+        }
+    }
+    out
 }
 
 fn render_markdown(groups: &[Group]) -> String {
