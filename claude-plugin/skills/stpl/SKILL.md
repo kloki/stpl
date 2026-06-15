@@ -1,6 +1,6 @@
 ---
 name: stpl
-description: Create, find, and list markdown memos/notes with the stpl CLI. Use when the user wants to jot a note, save a memo, capture standup/meeting notes, read or open an existing note, find a note by title, or see an overview of their notes.
+description: Create, find, list, and tag markdown memos/notes with the stpl CLI. Use when the user wants to jot a note, save a memo, capture standup/meeting notes, read or open an existing note, find a note by title, add tags to a note, or see an overview of their notes.
 allowed-tools: Bash Read
 ---
 
@@ -58,6 +58,20 @@ Fuzzy matching: an exact (case-insensitive) title or slug always wins;
 otherwise the closest match is used. If several memos match closely, `stpl`
 lists the candidates and asks you to be more specific rather than guessing — in
 that case, re-run with a more specific title.
+
+## Tag — add tags to a memo
+
+Add one or more tags to a memo's frontmatter, fuzzy-matched by title. Duplicates
+(already-present tags) are ignored, so it is safe to re-run.
+
+```sh
+stpl tag standup work urgent     # add the `work` and `urgent` tags
+```
+
+- Pass the title first, then one or more space-separated tags (at least one is
+  required).
+- Tags written here are what `stpl overview -t <tag>` filters on.
+- Title fuzzy-matching works the same as `path` above.
 
 ## Related commands
 
