@@ -98,5 +98,3 @@ memo_directory = "/home/you/stpls"
 disable_emoji  = false
 disable_color  = false
 ```
-
-be more specific rather than guessing.
