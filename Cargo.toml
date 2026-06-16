@@ -1,6 +1,6 @@
 [package]
 name = "stpl"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 description = "staple — quick creation and management of markdown notes/memos"
 license = "MIT"
