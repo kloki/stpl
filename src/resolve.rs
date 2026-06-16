@@ -4,7 +4,7 @@
 
 use std::cmp::Reverse;
 
-use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
+use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 
 use crate::{config::Config, error::StplError, memo::Memo, store};
 

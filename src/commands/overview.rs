@@ -3,7 +3,7 @@
 use std::{collections::BTreeMap, env, fs};
 
 use anstyle::{AnsiColor, Color, Style as AnsiStyle};
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use chrono::NaiveDate;
 use serde::Serialize;
 
@@ -179,26 +179,18 @@ fn render_markdown(groups: &[Group]) -> String {
         return "# Memos\n\n_No memos found._\n".to_string();
     }
     let mut out = String::from("# Memos\n");
-    // Reference-style links keep the bullet lines short; the long `file://`
-    // URLs are collected and emitted at the end of each week section.
-    let mut refnum = 0;
     for group in groups {
         out.push_str(&format!("\n## {}/{:02}\n\n", group.year, group.week));
-        let mut refs = String::new();
         for memo in &group.memos {
-            refnum += 1;
             // file:// URL with spaces percent-encoded so links stay valid.
             let url = memo.path.to_string_lossy().replace(' ', "%20");
             out.push_str(&format!(
-                "- [{}][{}]{}\n",
+                "- [{}](file://{}){}\n",
                 memo.title,
-                refnum,
+                url,
                 tags_suffix(&memo.tags)
             ));
-            refs.push_str(&format!("[{refnum}]: file://{url}\n"));
         }
-        out.push('\n');
-        out.push_str(&refs);
     }
     out
 }
@@ -224,7 +216,7 @@ mod tests {
     }
 
     #[test]
-    fn render_markdown_uses_reference_links_grouped_per_section() {
+    fn render_markdown_uses_inline_links() {
         let groups = vec![
             Group {
                 year: 2026,
@@ -245,15 +237,10 @@ mod tests {
             md,
             "# Memos\n\
              \n## 2026/25\n\n\
-             - [Alpha][1]  #api #hub\n\
-             - [Beta][2]\n\
-             \n\
-             [1]: file:///m/a.md\n\
-             [2]: file:///m/b.md\n\
+             - [Alpha](file:///m/a.md)  #api #hub\n\
+             - [Beta](file:///m/b.md)\n\
              \n## 2026/26\n\n\
-             - [Gamma][3]  #rest\n\
-             \n\
-             [3]: file:///m/c.md\n"
+             - [Gamma](file:///m/c.md)  #rest\n"
         );
     }
 }

@@ -9,7 +9,7 @@ use std::{
     process::Command,
 };
 
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 
 use crate::error::StplError;
 

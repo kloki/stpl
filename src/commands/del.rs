@@ -4,7 +4,7 @@
 
 use std::io::{IsTerminal, Write};
 
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 
 use crate::{commands::util, memo::MemoKind, output, store};
 
