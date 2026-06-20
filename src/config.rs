@@ -19,9 +19,6 @@ pub struct Config {
     /// Root directory holding all memos. Default: `~/stpls`.
     #[serde(default = "default_memo_directory")]
     pub memo_directory: PathBuf,
-    /// Disable emoji in output.
-    #[serde(default)]
-    pub disable_emoji: bool,
     /// Disable ANSI color in output.
     #[serde(default)]
     pub disable_color: bool,
@@ -40,7 +37,6 @@ impl Default for Config {
     fn default() -> Self {
         Config {
             memo_directory: default_memo_directory(),
-            disable_emoji: false,
             disable_color: false,
         }
     }

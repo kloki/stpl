@@ -206,7 +206,6 @@ mod tests {
         let tmp = std::env::temp_dir().join(format!("stpl-test-{}", std::process::id()));
         let config = Config {
             memo_directory: tmp.clone(),
-            disable_emoji: true,
             disable_color: true,
         };
         let date = NaiveDate::from_ymd_opt(2026, 6, 14).unwrap();
@@ -242,7 +241,6 @@ mod tests {
         let tmp = std::env::temp_dir().join(format!("stpl-tags-{}", std::process::id()));
         let config = Config {
             memo_directory: tmp.clone(),
-            disable_emoji: true,
             disable_color: true,
         };
         let date = NaiveDate::from_ymd_opt(2026, 6, 14).unwrap();
@@ -283,7 +281,6 @@ mod tests {
         let tmp = std::env::temp_dir().join(format!("stpl-expand-{}", std::process::id()));
         let config = Config {
             memo_directory: tmp.clone(),
-            disable_emoji: true,
             disable_color: true,
         };
         let date = NaiveDate::from_ymd_opt(2026, 6, 14).unwrap();

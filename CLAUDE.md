@@ -50,9 +50,9 @@ modules below, which is where most changes belong.
   score doesn't beat #2 by ≥1.5×. `edit`/`path`/`del`/`expand` all route titles through it.
 - **`config.rs`** — `Config` (TOML at `~/.config/stpl.toml`), defaults, `~` expansion, and
   `stpl init`. `memo_directory` is always absolute by the time a `Config` exists.
-- **`output.rs`** — presentation: `Style::from_config` resolves color/emoji/hyperlink
+- **`output.rs`** — presentation: `Style::from_config` resolves color/hyperlink
   capability from config + `NO_COLOR` + TTY detection. `memo_line` renders the canonical
-  `📎 title[file://…]` clickable line; `success`/`print_error` handle messaging.
+  `- title[file://…]` clickable line; `success`/`print_error` handle messaging.
 - **`editor.rs`** — launches `$EDITOR`/`$VISUAL`/`vi`, refusing when there is no TTY.
 - **`error.rs`** — `StplError`, the domain error enum. Commands return `anyhow::Result`;
   `main` prints the full cause chain in red and exits non-zero.

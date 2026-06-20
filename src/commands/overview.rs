@@ -3,7 +3,7 @@
 use std::{collections::BTreeMap, env, fs};
 
 use anstyle::{AnsiColor, Color, Style as AnsiStyle};
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use chrono::NaiveDate;
 use serde::Serialize;
 
@@ -118,11 +118,10 @@ fn render_text(style: &Style, groups: &[Group]) {
             "{}",
             heading(style, &format!("{} · week {:02}", group.year, group.week))
         );
-        let bullet = if style.emoji { "📎" } else { "-" };
         for memo in &group.memos {
             // The title is the clickable link; the path itself is not shown.
             let title = style.link(&memo.title, &memo.path);
-            anstream::println!("  {bullet} {title}{}", colored_tags(style, &memo.tags));
+            anstream::println!("  - {title}{}", colored_tags(style, &memo.tags));
         }
     }
 }

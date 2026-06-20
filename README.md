@@ -1,4 +1,4 @@
-# 📎 stpl (staple)
+# stpl (staple)
 
 Mgmt notes and memos from the command line that work for me (and agentic ai).
 
@@ -95,6 +95,5 @@ against existing memos:
 
 ```toml
 memo_directory = "/home/you/stpls"
-disable_emoji  = false
 disable_color  = false
 ```

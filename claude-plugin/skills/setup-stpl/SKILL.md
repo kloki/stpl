@@ -53,7 +53,6 @@ existing config, so it is safe to run.
 
 ```toml
 memo_directory = "/home/you/stpls"   # root for all memos; ~ is expanded
-disable_emoji  = false               # drop emoji from output
 disable_color  = false               # disable ANSI color (NO_COLOR also honored)
 ```
 
