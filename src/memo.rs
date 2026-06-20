@@ -184,6 +184,75 @@ pub fn write_tags(content: &str, tags: &[String]) -> String {
     out
 }
 
+/// Return the body of `content` with any leading YAML frontmatter block
+/// removed. If there is no `---`-delimited frontmatter at the top, the whole
+/// string is returned unchanged. Leading blank lines after the closing fence
+/// are trimmed so the body starts at its first real line.
+pub fn strip_frontmatter(content: &str) -> &str {
+    let rest = match content.strip_prefix("---\n") {
+        Some(rest) => rest,
+        None => return content,
+    };
+    let mut offset = 0;
+    for line in rest.split_inclusive('\n') {
+        if line.trim_end_matches('\n').trim() == "---" {
+            let after = offset + line.len();
+            return rest[after..].trim_start_matches('\n');
+        }
+        offset += line.len();
+    }
+    // Unterminated frontmatter: leave content untouched.
+    content
+}
+
+/// Return `content` with its title set to `new_title`: replaces the frontmatter
+/// `title:` line (if present) and the first level-1 (`# `) heading in the body
+/// (if present). All other lines — and the file's trailing-newline shape — are
+/// preserved verbatim.
+pub fn rewrite_title(content: &str, new_title: &str) -> String {
+    let has_fm = content.starts_with("---\n");
+    let mut out = String::with_capacity(content.len() + new_title.len());
+    let mut in_frontmatter = false;
+    let mut fm_title_done = false;
+    let mut h1_done = false;
+
+    for (i, line) in content.split_inclusive('\n').enumerate() {
+        let body = line.trim_end_matches('\n');
+        let nl = if line.ends_with('\n') { "\n" } else { "" };
+
+        if i == 0 && has_fm {
+            in_frontmatter = true;
+            out.push_str(line);
+            continue;
+        }
+        if in_frontmatter {
+            if body.trim() == "---" {
+                in_frontmatter = false;
+                out.push_str(line);
+                continue;
+            }
+            if !fm_title_done && body.trim().strip_prefix("title:").is_some() {
+                out.push_str("title: ");
+                out.push_str(new_title);
+                out.push_str(nl);
+                fm_title_done = true;
+                continue;
+            }
+            out.push_str(line);
+            continue;
+        }
+        if !h1_done && body.strip_prefix("# ").is_some() {
+            out.push_str("# ");
+            out.push_str(new_title);
+            out.push_str(nl);
+            h1_done = true;
+            continue;
+        }
+        out.push_str(line);
+    }
+    out
+}
+
 /// Parse a `<iso_date>-<slug>` stem into its date and slug components.
 ///
 /// The first 10 chars must be `%Y-%m-%d`, followed by a `-`, then a non-empty
@@ -422,6 +491,39 @@ mod tests {
         let out = write_tags(content, &["work".to_string()]);
         assert_eq!(out, "---\ntags: [work]\n---\n\n# T\n\nbody\n");
         assert_eq!(parse_tags(&out), vec!["work"]);
+    }
+
+    #[test]
+    fn strip_frontmatter_removes_block() {
+        let content = "---\ntitle: T\ntags: [a]\n---\n\n# T\n\nbody line\n";
+        assert_eq!(strip_frontmatter(content), "# T\n\nbody line\n");
+    }
+
+    #[test]
+    fn strip_frontmatter_passthrough_and_unterminated() {
+        // No frontmatter: returned unchanged.
+        let no_fm = "# T\n\nbody\n";
+        assert_eq!(strip_frontmatter(no_fm), no_fm);
+        // Opening fence but no closing fence: left untouched.
+        let unterminated = "---\ntitle: T\nstill in frontmatter\n";
+        assert_eq!(strip_frontmatter(unterminated), unterminated);
+    }
+
+    #[test]
+    fn rewrite_title_updates_frontmatter_and_h1() {
+        let content = "---\ntitle: Old\ndate: 2026-06-14\ntags: []\n---\n\n# Old\n\nbody\n";
+        let out = rewrite_title(content, "New Name");
+        assert_eq!(
+            out,
+            "---\ntitle: New Name\ndate: 2026-06-14\ntags: []\n---\n\n# New Name\n\nbody\n"
+        );
+    }
+
+    #[test]
+    fn rewrite_title_only_first_h1_and_no_frontmatter() {
+        // No frontmatter; only the first `# ` heading is changed.
+        let content = "# Old\n\n# Old\n";
+        assert_eq!(rewrite_title(content, "New"), "# New\n\n# Old\n");
     }
 
     #[test]
