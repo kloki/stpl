@@ -7,7 +7,7 @@ use std::{
     process::{Command, Output},
 };
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use chrono::Local;
 
 use crate::{commands::util, error::StplError, output};

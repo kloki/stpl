@@ -33,6 +33,9 @@ pub enum Command {
     Path {
         /// Title to fuzzy-match.
         title: String,
+        /// Print the memo's containing folder instead of the file path.
+        #[arg(short = 'd', long = "dir")]
+        dir: bool,
     },
 
     /// Commit, pull, and push the memo directory (git-backed).

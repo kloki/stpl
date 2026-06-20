@@ -29,7 +29,7 @@ fn run(cli: Cli) -> anyhow::Result<()> {
         Command::Init => commands::init::run(),
         Command::New { title, message } => commands::new::run(&title, message.as_deref()),
         Command::Edit { title } => commands::edit::run(&title),
-        Command::Path { title } => commands::path::run(&title),
+        Command::Path { title, dir } => commands::path::run(&title, dir),
         Command::Sync => commands::sync::run(),
         Command::Del { title, yes } => commands::del::run(&title, yes),
         Command::Expand { title } => commands::expand::run(&title),

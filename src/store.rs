@@ -4,7 +4,7 @@
 
 use std::{fs, path::PathBuf};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use chrono::NaiveDate;
 use walkdir::WalkDir;
 
