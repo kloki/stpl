@@ -103,3 +103,21 @@ Title arguments to `edit`, `path`, `show`, `append`, `rename`, `del`, `expand`,
 memo_directory = "/home/you/stpls"
 disable_color  = false
 ```
+
+## Fuzzy finder
+
+Add this snippet to you `.bashrc` to use `stpl` with `fzf`
+
+```bash
+sn() {
+    local sel path cyan reset
+    cyan=$(tput setaf 6)
+    reset=$(tput sgr0)
+    sel=$(stpl overview json | jq -r '.[].memos[] | [.title, (.tags | join(",")), .path] | @tsv' \
+        | awk -F'\t' -v c="$cyan" -v r="$reset" '{print $1"\t"c$2r"\t"$3}' \
+        | fzf --ansi --delimiter '\t' --with-nth=1,2 \
+              --preview 'cat {3}' --preview-window=right:60%:wrap) || return
+    path=$(echo "$sel" | awk -F'\t' '{print $3}')
+    "$EDITOR" "$path"
+}
+```
