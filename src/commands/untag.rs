@@ -12,7 +12,7 @@ use crate::{commands::util, output, store};
 /// errors.
 pub fn run(title: &str, tags: &[String]) -> Result<()> {
     let (config, style) = util::config_and_style()?;
-    let memo = util::resolve_or_show(&config, &style, title)?;
+    let memo = util::resolve_or_last(&config, &style, Some(title))?;
     let remaining = store::remove_tags(&memo, tags)?;
     output::success(
         &style,

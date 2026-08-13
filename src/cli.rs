@@ -25,14 +25,14 @@ pub enum Command {
 
     /// Open a memo in $EDITOR.
     Edit {
-        /// Title to fuzzy-match.
-        title: String,
+        /// Title to fuzzy-match. Defaults to the last memo you used.
+        title: Option<String>,
     },
 
     /// Print a memo's absolute path (useful for scripting/agentic use).
     Path {
-        /// Title to fuzzy-match.
-        title: String,
+        /// Title to fuzzy-match. Defaults to the last memo you used.
+        title: Option<String>,
         /// Print the memo's containing folder instead of the file path.
         #[arg(short = 'd', long = "dir")]
         dir: bool,
@@ -40,8 +40,8 @@ pub enum Command {
 
     /// Print a memo's contents to stdout (no decoration; pipe-friendly).
     Show {
-        /// Title to fuzzy-match.
-        title: String,
+        /// Title to fuzzy-match. Defaults to the last memo you used.
+        title: Option<String>,
         /// Omit the YAML frontmatter, printing only the body.
         #[arg(long = "no-frontmatter")]
         no_frontmatter: bool,
@@ -49,8 +49,8 @@ pub enum Command {
 
     /// Append a line to an existing memo (no editor).
     Append {
-        /// Title to fuzzy-match.
-        title: String,
+        /// Title to fuzzy-match. Defaults to the last memo you used.
+        title: Option<String>,
         /// Text to append.
         #[arg(short = 'm', long = "message")]
         message: String,
@@ -87,8 +87,8 @@ pub enum Command {
 
     /// Delete a memo (asks for confirmation).
     Del {
-        /// Title to fuzzy-match.
-        title: String,
+        /// Title to fuzzy-match. Defaults to the last memo you used.
+        title: Option<String>,
         /// Skip the confirmation prompt.
         #[arg(short = 'y', long = "yes")]
         yes: bool,
@@ -96,8 +96,8 @@ pub enum Command {
 
     /// Expand a memo into a project directory.
     Expand {
-        /// Title to fuzzy-match.
-        title: String,
+        /// Title to fuzzy-match. Defaults to the last memo you used.
+        title: Option<String>,
     },
 
     /// Add one or more tags to a memo (duplicates are ignored).

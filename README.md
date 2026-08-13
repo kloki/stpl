@@ -47,6 +47,7 @@ stpl rename standup "Daily standup"    # re-slug and move, keeping the date
 stpl tag standup work urgent           # add tags (duplicates ignored)
 stpl untag standup urgent              # remove tags
 stpl tags                              # list all tags with counts
+stpl show                              # no title? act on the last memo you used
 ```
 
 For more
@@ -94,6 +95,38 @@ Title arguments to `edit`, `path`, `show`, `append`, `rename`, `del`, `expand`,
 - Otherwise the closest match is used.
 - If several memos match closely, `stpl` lists the candidates (as clickable
   links) and asks you to
+
+## The last memo you used
+
+`edit`, `path`, `show`, `append`, `del`, and `expand` take the title
+**optionally** — leave it out and they act on the last memo you used:
+
+```sh
+stpl new "Standup notes" -m "blocked on CI"
+stpl append -m "CI fixed"   # same memo, no title needed
+stpl show                   # still the same memo
+stpl edit                   # open it in $EDITOR
+```
+
+Every command that targets a single memo updates that pointer — `new`, `edit`,
+`path`, `show`, `append`, `rename`, `expand`, `tag`, and `untag`. `rename` and
+`expand` follow the memo to its new location; `del` forgets it (and only it, so
+deleting some other memo leaves the pointer alone).
+
+`new` always needs a title, of course. So do `rename`, `tag`, and `untag`,
+because they take a second argument — `stpl tag rust` can't tell a title from a
+tag.
+
+The pointer lives in `~/.local/state/stpl/last.toml` (XDG state dir), holding
+just the memo's path. It's a convenience cache, so it's created lazily, never
+errors, and if the memo has since been deleted or moved outside `stpl` you get:
+
+```
+error: no memo given and no recent memo remembered — pass a title, or create one with `stpl new <title>`
+```
+
+Scripts and agents should keep passing explicit titles — an implicit target
+depends on whatever ran last.
 
 ## Configuration
 

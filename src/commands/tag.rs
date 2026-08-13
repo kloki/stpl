@@ -11,7 +11,7 @@ use crate::{commands::util, output, store};
 /// Ambiguity/NotFound propagate as errors.
 pub fn run(title: &str, tags: &[String]) -> Result<()> {
     let (config, style) = util::config_and_style()?;
-    let memo = util::resolve_or_show(&config, &style, title)?;
+    let memo = util::resolve_or_last(&config, &style, Some(title))?;
     let all = store::add_tags(&memo, tags)?;
     output::success(
         &style,

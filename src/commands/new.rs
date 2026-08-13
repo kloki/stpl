@@ -5,17 +5,19 @@
 use anyhow::Result;
 use chrono::Local;
 
-use crate::{commands::util, editor, memo, output, store};
+use crate::{commands::util, editor, memo, output, state, store};
 
 /// Create a new memo dated today. Slugify `title`, lazily create the
 /// `<year>/<week>` dirs, and write the template (`store::create`).
 /// With `content` (`-m`): write and report the path via `output::success`.
 /// Without it: create the file then open it in `$EDITOR` (`editor::open`).
+/// Either way the new memo becomes the one other commands act on by default.
 pub fn run(title: &str, content: Option<&str>) -> Result<()> {
     let (config, style) = util::config_and_style()?;
     let slug = memo::slugify(title)?;
     let date = Local::now().date_naive();
     let path = store::create(&config, date, &slug, title, content)?;
+    state::record(&path);
 
     match content {
         Some(_) => {

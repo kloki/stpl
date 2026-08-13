@@ -16,6 +16,13 @@ pub enum StplError {
     #[error("multiple memos match '{query}' — be more specific")]
     Ambiguous { query: String, matches: Vec<Memo> },
 
+    /// A command that allows an implicit target was run with no title and no
+    /// remembered memo (or the remembered memo is gone).
+    #[error(
+        "no memo given and no recent memo remembered — pass a title, or create one with `stpl new <title>`"
+    )]
+    NoLastMemo,
+
     /// A target path already exists (e.g. `expand` collision, same-day memo).
     #[error("'{0}' already exists")]
     Collision(PathBuf),

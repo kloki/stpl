@@ -60,6 +60,19 @@ otherwise the closest match is used. If several memos match closely, `stpl`
 lists the candidates and asks you to be more specific rather than guessing — in
 that case, re-run with a more specific title.
 
+## Omitting the title
+
+`edit`, `path`, `show`, `append`, `del`, and `expand` accept the title
+optionally — with no title they act on the **last memo used** (remembered in
+`~/.local/state/stpl/last.toml`, updated by every command that targets a memo).
+
+**Always pass an explicit title in agent context.** The implicit target depends
+on whatever ran last, including commands the user ran in another terminal, so
+omitting it makes a command non-deterministic. It exists for interactive use.
+
+With no title and nothing remembered, the command fails with
+`no memo given and no recent memo remembered`.
+
 ## Show — read a memo's contents
 
 Print a matched memo to stdout with no decoration — **prefer this over
@@ -119,4 +132,6 @@ stpl tag standup work urgent     # add the `work` and `urgent` tags
 - `stpl del <title> [-y]` — delete a memo; `-y` skips confirmation (required
   without a TTY).
 - `stpl expand <title>` — turn a single-file memo into a project directory.
+- `rename`, `tag`, and `untag` always require an explicit title — they take a
+  second argument, so it cannot be omitted.
 - `stpl sync` — commit, pull, and push the memo directory (git-backed).

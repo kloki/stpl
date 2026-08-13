@@ -1,4 +1,4 @@
-//! `stpl path <title>` — print a memo's absolute path and nothing else.
+//! `stpl path [title]` — print a memo's absolute path and nothing else.
 //!
 //! CONTRACT — implement `run`; do not change its signature.
 
@@ -10,11 +10,12 @@ use crate::commands::util;
 /// absolute path to stdout. Intended for scripting/agentic use, so the output is
 /// just the bare path with no decoration. With `dir`, print the memo's containing
 /// folder instead (the week folder for a file, the project directory for a
-/// project). Ambiguity/NotFound propagate as errors; the caller renders ambiguous
-/// matches.
-pub fn run(title: &str, dir: bool) -> Result<()> {
+/// project). With no `title`, act on the last memo used
+/// (`util::resolve_or_last`). Ambiguity/NotFound propagate as errors; the caller
+/// renders ambiguous matches.
+pub fn run(title: Option<&str>, dir: bool) -> Result<()> {
     let (config, style) = util::config_and_style()?;
-    let memo = util::resolve_or_show(&config, &style, title)?;
+    let memo = util::resolve_or_last(&config, &style, title)?;
     let path = if dir {
         memo.path.parent().unwrap_or(&memo.path)
     } else {

@@ -50,6 +50,10 @@ modules below, which is where most changes belong.
   score doesn't beat #2 by ≥1.5×. `edit`/`path`/`del`/`expand` all route titles through it.
 - **`config.rs`** — `Config` (TOML at `~/.config/stpl.toml`), defaults, `~` expansion, and
   `stpl init`. `memo_directory` is always absolute by the time a `Config` exists.
+- **`state.rs`** — the "last memo used" pointer (TOML at `~/.local/state/stpl/last.toml`),
+  which is what lets `edit`/`path`/`show`/`append`/`del`/`expand` take the title
+  optionally. Stores only the path; `load` rehydrates via `Memo::from_path` and returns
+  `None` when the memo is gone, so stale pointers are self-detecting.
 - **`output.rs`** — presentation: `Style::from_config` resolves color/hyperlink
   capability from config + `NO_COLOR` + TTY detection. `memo_line` renders the canonical
   `- title[file://…]` clickable line; `success`/`print_error` handle messaging.
@@ -70,6 +74,10 @@ modules below, which is where most changes belong.
   `parse_stem` tests.
 - **`from_path`/`memo_path` round-trip.** Changing the on-disk naming scheme means updating
   both, plus the round-trip tests in `memo.rs`.
+- **State is best-effort.** Nothing in `state.rs` may fail a command — an unwritable state
+  dir is a silent no-op. Commands resolve their target through `commands::util`:
+  `resolve_or_last` (resolve + record) for the normal case, `resolve_target` (resolve only)
+  for `del`, which must not record a memo it is about to delete.
 
 ### `CONTRACT` headers
 

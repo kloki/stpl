@@ -4,7 +4,7 @@
 
 use anyhow::Result;
 
-use crate::{commands::util, output, store};
+use crate::{commands::util, output, state, store};
 
 /// Fuzzy-resolve `title` and rename the resolved memo to `new_title`
 /// (`store::rename`): re-slug, rewrite the in-file title, and move the file (or
@@ -12,8 +12,10 @@ use crate::{commands::util, output, store};
 /// `output::success`. Ambiguity/NotFound/Collision propagate as errors.
 pub fn run(title: &str, new_title: &str) -> Result<()> {
     let (config, style) = util::config_and_style()?;
-    let memo = util::resolve_or_show(&config, &style, title)?;
+    let memo = util::resolve_or_last(&config, &style, Some(title))?;
     let (new_path, _slug) = store::rename(&memo, new_title)?;
+    // `resolve_or_last` recorded the old path; the move supersedes it.
+    state::record(&new_path);
     output::success(
         &style,
         &format!(

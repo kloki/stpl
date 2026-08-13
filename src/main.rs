@@ -8,6 +8,7 @@ mod error;
 mod memo;
 mod output;
 mod resolve;
+mod state;
 mod store;
 
 use std::process;
@@ -28,13 +29,13 @@ fn run(cli: Cli) -> anyhow::Result<()> {
     match cli.command {
         Command::Init => commands::init::run(),
         Command::New { title, message } => commands::new::run(&title, message.as_deref()),
-        Command::Edit { title } => commands::edit::run(&title),
-        Command::Path { title, dir } => commands::path::run(&title, dir),
+        Command::Edit { title } => commands::edit::run(title.as_deref()),
+        Command::Path { title, dir } => commands::path::run(title.as_deref(), dir),
         Command::Show {
             title,
             no_frontmatter,
-        } => commands::show::run(&title, no_frontmatter),
-        Command::Append { title, message } => commands::append::run(&title, &message),
+        } => commands::show::run(title.as_deref(), no_frontmatter),
+        Command::Append { title, message } => commands::append::run(title.as_deref(), &message),
         Command::Rename { title, new_title } => commands::rename::run(&title, &new_title),
         Command::Search {
             query,
@@ -44,8 +45,8 @@ fn run(cli: Cli) -> anyhow::Result<()> {
             tags,
         } => commands::search::run(&query, format, after.as_deref(), before.as_deref(), &tags),
         Command::Sync => commands::sync::run(),
-        Command::Del { title, yes } => commands::del::run(&title, yes),
-        Command::Expand { title } => commands::expand::run(&title),
+        Command::Del { title, yes } => commands::del::run(title.as_deref(), yes),
+        Command::Expand { title } => commands::expand::run(title.as_deref()),
         Command::Tag { title, tags } => commands::tag::run(&title, &tags),
         Command::Untag { title, tags } => commands::untag::run(&title, &tags),
         Command::Tags { format } => commands::tags::run(format),
