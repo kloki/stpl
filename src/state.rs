@@ -59,10 +59,10 @@ pub fn clear_if(memo_path: &Path) {
 
 /// `record` against an explicit state-file path (testable core).
 fn record_at(file: &Path, memo_path: &Path) {
-    if let Some(parent) = file.parent() {
-        if fs::create_dir_all(parent).is_err() {
-            return;
-        }
+    if let Some(parent) = file.parent()
+        && fs::create_dir_all(parent).is_err()
+    {
+        return;
     }
     let last = LastMemo {
         path: memo_path.to_path_buf(),

@@ -47,10 +47,10 @@ pub fn run(
 
     let after = parse_date(after)?;
     let before = parse_date(before)?;
-    if let (Some(a), Some(b)) = (after, before) {
-        if a > b {
-            return Err(anyhow!("invalid range: after {a} is later than before {b}"));
-        }
+    if let (Some(a), Some(b)) = (after, before)
+        && a > b
+    {
+        return Err(anyhow!("invalid range: after {a} is later than before {b}"));
     }
 
     let mut memos = store::list_all(&config)?;
