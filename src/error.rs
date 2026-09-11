@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use thiserror::Error;
 
-use crate::memo::Memo;
+use crate::{diary::Diary, memo::Memo};
 
 #[derive(Error, Debug)]
 pub enum StplError {
@@ -46,6 +46,21 @@ pub enum StplError {
     /// The memo directory is not a git repository (needed by `stpl sync`).
     #[error("'{0}' is not a git repository")]
     NotAGitRepo(PathBuf),
+
+    /// No diary matched the query.
+    #[error("no diary matches '{0}'")]
+    DiaryNotFound(String),
+
+    /// Multiple diaries matched the query; the caller should list `matches`.
+    #[error("multiple diaries match '{query}' — be more specific")]
+    AmbiguousDiary { query: String, matches: Vec<Diary> },
+
+    /// A diary command that allows an implicit target was run with no name and
+    /// no remembered diary (or the remembered diary is gone).
+    #[error(
+        "no diary given and no recent diary remembered — pass a name, or add an entry with `stpl diary <name> -m \"text\"`"
+    )]
+    NoLastDiary,
 
     /// `git pull` left unmerged paths that need manual resolution.
     #[error(

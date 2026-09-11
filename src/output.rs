@@ -1,4 +1,4 @@
-//! Terminal output: color gating, OSC 8 hyperlinks, memo formatting.
+//! Terminal output: color gating, OSC 8 hyperlinks, memo/diary formatting.
 //!
 //! CONTRACT — implement the bodies; do not change public signatures.
 
@@ -10,7 +10,7 @@ use std::{
 
 use anstyle::{AnsiColor, Color, Style as AnsiStyle};
 
-use crate::{config::Config, memo::Memo};
+use crate::{config::Config, diary::Diary, memo::Memo};
 
 /// Resolved presentation capabilities for this invocation.
 #[derive(Debug, Clone, Copy)]
@@ -51,9 +51,18 @@ impl Style {
     /// Format a single memo as the canonical `- title[file://...]` line.
     /// The whole `title[path]` token is the clickable link.
     pub fn memo_line(&self, memo: &Memo) -> String {
-        let token = format!("{}[{}]", memo.title, memo.path.display());
-        let linked = self.link(&token, &memo.path);
-        format!("- {linked}")
+        self.titled_line(&memo.title, &memo.path)
+    }
+
+    /// The same canonical line for a diary, keyed on its name.
+    pub fn diary_line(&self, diary: &Diary) -> String {
+        self.titled_line(&diary.name, &diary.path)
+    }
+
+    /// `- title[path]`, with the whole token as the clickable link.
+    fn titled_line(&self, title: &str, path: &Path) -> String {
+        let token = format!("{}[{}]", title, path.display());
+        format!("- {}", self.link(&token, path))
     }
 }
 

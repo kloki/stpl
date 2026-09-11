@@ -1,4 +1,4 @@
-//! Persistent "last memo used" pointer.
+//! Persistent "last memo used" and "last diary used" pointers.
 //!
 //! CONTRACT — implement the bodies; do not change public signatures.
 //!
@@ -7,6 +7,10 @@
 //! stored; the `Memo` is rehydrated with `Memo::from_path`, which makes a stale
 //! pointer (memo deleted or renamed outside stpl) self-detecting — `load`
 //! simply returns `None`.
+//!
+//! Diaries get their own file rather than a second key in `last.toml`, so the
+//! two pointers can never clobber each other: `record` rewrites its whole file
+//! and `clear_if` deletes it.
 //!
 //! Every function here is best-effort: this is a convenience cache, never a
 //! source of truth, so I/O errors are swallowed rather than failing a command.
@@ -18,7 +22,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::memo::Memo;
+use crate::{diary::Diary, memo::Memo};
 
 /// On-disk shape of the state file.
 #[derive(Debug, Serialize, Deserialize)]
@@ -26,12 +30,21 @@ struct LastMemo {
     path: PathBuf,
 }
 
-/// Path to the state file: `~/.local/state/stpl/last.toml` (XDG state dir),
-/// falling back to the local data dir on platforms without one. `None` when
-/// neither can be determined.
-pub fn path() -> Option<PathBuf> {
+/// The state directory: XDG state dir, falling back to the local data dir on
+/// platforms without one. `None` when neither can be determined.
+fn state_dir() -> Option<PathBuf> {
     let dir = dirs::state_dir().or_else(dirs::data_local_dir)?;
-    Some(dir.join("stpl").join("last.toml"))
+    Some(dir.join("stpl"))
+}
+
+/// Path to the memo state file: `~/.local/state/stpl/last.toml`.
+pub fn path() -> Option<PathBuf> {
+    Some(state_dir()?.join("last.toml"))
+}
+
+/// Path to the diary state file: `~/.local/state/stpl/last-diary.toml`.
+pub fn diary_path() -> Option<PathBuf> {
+    Some(state_dir()?.join("last-diary.toml"))
 }
 
 /// Remember `memo_path` as the last memo used. Best-effort: creates the state
@@ -53,6 +66,27 @@ pub fn load() -> Option<Memo> {
 pub fn clear_if(memo_path: &Path) {
     let Some(file) = path() else { return };
     if read_at(&file).as_deref() == Some(memo_path) {
+        let _ = fs::remove_file(&file);
+    }
+}
+
+/// Remember `diary_file` as the last diary used. Best-effort, like `record`.
+pub fn record_diary(diary_file: &Path) {
+    let Some(file) = diary_path() else { return };
+    record_at(&file, diary_file);
+}
+
+/// Load the remembered diary, or `None` when nothing is recorded, the state
+/// file is unreadable/unparseable, or the diary no longer exists on disk.
+pub fn load_diary() -> Option<Diary> {
+    load_diary_at(&diary_path()?)
+}
+
+/// Forget the remembered diary, but only if it currently points at
+/// `diary_file`. Used by `stpl diary del`.
+pub fn clear_diary_if(diary_file: &Path) {
+    let Some(file) = diary_path() else { return };
+    if read_at(&file).as_deref() == Some(diary_file) {
         let _ = fs::remove_file(&file);
     }
 }
@@ -82,6 +116,15 @@ fn load_at(file: &Path) -> Option<Memo> {
         return None;
     }
     Memo::from_path(&memo_path)
+}
+
+/// `load_diary` against an explicit state-file path (testable core).
+fn load_diary_at(file: &Path) -> Option<Diary> {
+    let diary_file = read_at(file)?;
+    if !diary_file.is_file() {
+        return None;
+    }
+    Diary::from_path(&diary_file)
 }
 
 /// Read the recorded path out of `file`, without validating that it exists.
@@ -153,5 +196,49 @@ mod tests {
         let memo = load_at(&file).expect("memo should load");
         assert_eq!(memo.slug, "standup-notes");
         assert_eq!(memo.path, memo_path);
+    }
+
+    #[test]
+    fn diary_pointer_round_trips() {
+        let dir = temp_dir("diary-load");
+        let file = dir.join("last-diary.toml");
+        let diaries = dir.join("diaries");
+        fs::create_dir_all(&diaries).unwrap();
+        let diary_file = diaries.join("work-log.md");
+        fs::write(&diary_file, "# 2026-09-11T09:15\n\nx\n").unwrap();
+
+        record_at(&file, &diary_file);
+
+        let diary = load_diary_at(&file).expect("diary should load");
+        assert_eq!(diary.slug, "work-log");
+        assert_eq!(diary.name, "Work Log");
+        assert_eq!(diary.path, diary_file);
+    }
+
+    #[test]
+    fn stale_diary_pointer_is_none() {
+        let dir = temp_dir("diary-stale");
+        let file = dir.join("last-diary.toml");
+        record_at(&file, &dir.join("diaries").join("gone.md"));
+        assert!(load_diary_at(&file).is_none());
+    }
+
+    #[test]
+    fn memo_and_diary_pointers_are_independent_files() {
+        let dir = temp_dir("independent");
+        let memo_state = dir.join("last.toml");
+        let diary_state = dir.join("last-diary.toml");
+        let memo_file = dir.join("2026/33/2026-08-13-standup.md");
+        let diary_file = dir.join("diaries/work.md");
+
+        record_at(&memo_state, &memo_file);
+        record_at(&diary_state, &diary_file);
+
+        assert_eq!(read_at(&memo_state), Some(memo_file.clone()));
+        assert_eq!(read_at(&diary_state), Some(diary_file));
+
+        // Clearing the diary pointer leaves the memo pointer alone.
+        let _ = fs::remove_file(&diary_state);
+        assert_eq!(read_at(&memo_state), Some(memo_file));
     }
 }

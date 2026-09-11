@@ -1,6 +1,6 @@
 //! Command-line interface definition (clap derive).
 
-use clap::{Parser, Subcommand, ValueEnum};
+use clap::{Args, Parser, Subcommand, ValueEnum};
 
 #[derive(Parser, Debug)]
 #[command(name = "stpl", version, about = "staple — quick markdown notes/memos")]
@@ -125,6 +125,9 @@ pub enum Command {
         format: Format,
     },
 
+    /// Add a timestamped entry to a diary, or manage diaries.
+    Diary(DiaryArgs),
+
     /// Print an overview of memos grouped by folder.
     Overview {
         /// Output format (default `text`).
@@ -139,6 +142,64 @@ pub enum Command {
         /// Only show memos that have at least one of these tags (repeatable).
         #[arg(short = 't', long = "tag")]
         tags: Vec<String>,
+    },
+}
+
+/// `stpl diary [name] [-m text]` plus the management subcommands.
+///
+/// `args_conflicts_with_subcommands` keeps `stpl diary list -m x` an error
+/// instead of silently ignoring one half. Nothing here is required, so
+/// `subcommand_negates_reqs` is unnecessary.
+#[derive(Args, Debug)]
+#[command(args_conflicts_with_subcommands = true)]
+pub struct DiaryArgs {
+    #[command(subcommand)]
+    pub command: Option<DiaryCommand>,
+
+    /// Diary name (created on first use with -m). Defaults to the last diary
+    /// you used. For a diary named like a subcommand, put it after `--`
+    /// (`stpl diary -m "text" -- list`).
+    pub name: Option<String>,
+
+    /// Entry text to append. Without it, the diary opens in $EDITOR.
+    #[arg(short = 'm', long = "message")]
+    pub message: Option<String>,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum DiaryCommand {
+    /// List all diaries with their entry counts.
+    List {
+        /// Output format (default `text`).
+        #[arg(value_enum, default_value_t = Format::Text)]
+        format: Format,
+    },
+
+    /// Print a diary's contents to stdout (no decoration; pipe-friendly).
+    Show {
+        /// Name to fuzzy-match. Defaults to the last diary you used.
+        name: Option<String>,
+    },
+
+    /// Open a diary in $EDITOR.
+    Edit {
+        /// Name to fuzzy-match. Defaults to the last diary you used.
+        name: Option<String>,
+    },
+
+    /// Print a diary's absolute path (useful for scripting/agentic use).
+    Path {
+        /// Name to fuzzy-match. Defaults to the last diary you used.
+        name: Option<String>,
+    },
+
+    /// Delete a diary and all its entries (asks for confirmation).
+    Del {
+        /// Name to fuzzy-match. Defaults to the last diary you used.
+        name: Option<String>,
+        /// Skip the confirmation prompt.
+        #[arg(short = 'y', long = "yes")]
+        yes: bool,
     },
 }
 

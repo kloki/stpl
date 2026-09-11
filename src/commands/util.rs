@@ -2,7 +2,14 @@
 
 use anyhow::Result;
 
-use crate::{config::Config, error::StplError, memo::Memo, output::Style, resolve, state};
+use crate::{
+    config::Config,
+    diary::{self, Diary},
+    error::StplError,
+    memo::Memo,
+    output::Style,
+    resolve, state,
+};
 
 /// Load config and derive the output `Style` in one shot — the common preamble
 /// for nearly every command.
@@ -49,4 +56,36 @@ pub fn resolve_or_last(config: &Config, style: &Style, query: Option<&str>) -> R
     let memo = resolve_target(config, style, query)?;
     state::record(&memo.path);
     Ok(memo)
+}
+
+/// `resolve_or_show` for diaries: on `AmbiguousDiary`, list the candidates as
+/// clickable lines on stderr before propagating.
+pub fn resolve_diary_or_show(config: &Config, style: &Style, query: &str) -> Result<Diary> {
+    match diary::resolve_one(config, query) {
+        Ok(diary) => Ok(diary),
+        Err(StplError::AmbiguousDiary { query, matches }) => {
+            anstream::eprintln!("multiple diaries match '{query}' — be more specific:");
+            for diary in &matches {
+                anstream::eprintln!("  {}", style.diary_line(diary));
+            }
+            Err(StplError::AmbiguousDiary { query, matches }.into())
+        }
+        Err(other) => Err(other.into()),
+    }
+}
+
+/// `resolve_target` for diaries: `None` falls back to the last diary used.
+/// Does not touch the pointer — used by `stpl diary del`.
+pub fn resolve_diary_target(config: &Config, style: &Style, name: Option<&str>) -> Result<Diary> {
+    match name {
+        Some(name) => resolve_diary_or_show(config, style, name),
+        None => state::load_diary().ok_or_else(|| StplError::NoLastDiary.into()),
+    }
+}
+
+/// `resolve_diary_target`, plus recording the result as the last diary used.
+pub fn resolve_diary_or_last(config: &Config, style: &Style, name: Option<&str>) -> Result<Diary> {
+    let diary = resolve_diary_target(config, style, name)?;
+    state::record_diary(&diary.path);
+    Ok(diary)
 }
