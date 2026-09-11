@@ -1,6 +1,6 @@
 ---
 name: stpl
-description: Create, find, read, search, list, and tag markdown memos/notes with the stpl CLI. Use when the user wants to jot a note, save a memo, capture standup/meeting notes, read or open an existing note, find a note by title, search note contents, append to a note, rename a note, add or remove tags, or see an overview of their notes.
+description: Create, find, read, search, list, and tag markdown memos/notes, and keep timestamped diaries, with the stpl CLI. Use when the user wants to jot a note, save a memo, capture standup/meeting notes, read or open an existing note, find a note by title, search note contents, append to a note, rename a note, add or remove tags, see an overview of their notes, keep a diary or journal, log what happened today, or add/read a dated diary entry.
 allowed-tools: Bash Read
 ---
 
@@ -8,7 +8,8 @@ allowed-tools: Bash Read
 
 `stpl` (staple) stores each memo as a plain `.md` file in a dated
 `year/ISO-week/` tree under the configured memo directory (default `~/stpls`).
-Its output is agent-friendly. If `stpl --version` fails, run the
+It also keeps **diaries** — append-only timestamped logs in `diaries/`, outside
+the dated tree. Its output is agent-friendly. If `stpl --version` fails, run the
 `/stpl:setup-stpl` skill first.
 
 ## Overview — list memos
@@ -97,6 +98,12 @@ stpl search todo -t work -a 2026-06-01   # combine with tag / date filters
 In `json`, each hit carries the memo fields plus a `matches` array of
 `{ line, text }`. Avoid `-f editor` in an agent context (opens `$EDITOR`).
 
+Search also covers **diary** entries. A diary hit has `"kind": "diary"` with
+`name`, `slug`, and `path` but no `date`, `week`, or `tags`, and each of its
+matches adds an `entry` timestamp naming the entry the line sits in — so branch
+on `kind` when parsing. `-a`/`-b` filter diary matches by their entry's date;
+`-t` excludes diaries entirely, since they carry no tags.
+
 ## Append — add to a memo without an editor
 
 ```sh
@@ -105,6 +112,31 @@ stpl append standup -m "CI is green again"
 
 Appends the message as a new line (after a blank separator), leaving the file
 tidy. Non-interactive — safe to drive programmatically.
+
+## Diary — timestamped running logs
+
+A diary is one file holding many entries, each under a `# <ISO timestamp>`
+heading. Use it for a journal, a work log, or anything append-only; use a memo
+when the note is about one topic.
+
+```sh
+stpl diary work -m "standup: blocked on CI"   # append an entry (creates it if new)
+stpl diary list json                          # every diary — prefer this for parsing
+stpl diary show work                          # print the whole diary
+```
+
+- **Always pass `-m/--message` and an explicit name.** Without `-m` the command
+  opens `$EDITOR` and blocks; without a name it targets whatever diary was used
+  last, which is non-deterministic.
+- Adding takes the name **exactly** (slugified, so `Work` and `work` are one
+  diary) and creates it on first use. `show`, `edit`, `path`, and `del` instead
+  fuzzy-match the name like memo titles.
+- `stpl diary list json` returns `{ name, slug, path, entries, last_entry }` per
+  diary; `last_entry` is `null` for an empty one.
+- `list`, `show`, `edit`, `path`, and `del` are subcommand names. For a diary
+  actually called one of them, use `stpl diary -m "text" -- list`.
+- Diaries are invisible to `overview` and the memo commands. `stpl search` does
+  cover them — see above.
 
 ## Tag — add tags to a memo
 
@@ -134,4 +166,6 @@ stpl tag standup work urgent     # add the `work` and `urgent` tags
 - `stpl expand <title>` — turn a single-file memo into a project directory.
 - `rename`, `tag`, and `untag` always require an explicit title — they take a
   second argument, so it cannot be omitted.
-- `stpl sync` — commit, pull, and push the memo directory (git-backed).
+- `stpl diary <name> -m "text"` — append a timestamped diary entry (see above).
+- `stpl sync` — commit, pull, and push the memo directory, diaries included
+  (git-backed).

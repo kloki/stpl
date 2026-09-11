@@ -21,7 +21,7 @@ can drive `stpl` for you. It bundles two skills:
 
 - **`/stpl:setup-stpl`** — install `stpl` and create/configure its config.
 - **`/stpl:stpl`** — day-to-day use: `overview` (list), `new` (create), and
-  `path` (find/read) memos.
+  `path` (find/read) memos, plus `diary` for timestamped logs.
 
 Install it from this repo's marketplace:
 
@@ -48,6 +48,9 @@ stpl tag standup work urgent           # add tags (duplicates ignored)
 stpl untag standup urgent              # remove tags
 stpl tags                              # list all tags with counts
 stpl show                              # no title? act on the last memo you used
+stpl diary work -m "CI fixed"          # append a timestamped entry to a diary
+stpl diary -m "and again"              # same diary, no name needed
+stpl diary list                        # every diary, with entry counts
 ```
 
 For more
@@ -64,11 +67,13 @@ Memos live under the configured memo directory (default `~/stpls`) in a
 
 ```
 ~/stpls/
-└── 2026/
-    └── 24/                                  # ISO week number, zero-padded
-        ├── 2026-06-14-standup-notes.md      # a memo
-        └── 2026-06-14-release/              # a project (see `expand`)
-            └── project.md
+├── 2026/
+│   └── 24/                                  # ISO week number, zero-padded
+│       ├── 2026-06-14-standup-notes.md      # a memo
+│       └── 2026-06-14-release/              # a project (see `expand`)
+│           └── project.md
+└── diaries/                                 # diaries live outside the dated tree
+    └── work.md
 ```
 
 - Filenames are `<iso-date>-<slug>.md`; the slug is a lower-kebab form of the
@@ -85,6 +90,59 @@ date: 2026-06-14
 tags: []
 ---
 ```
+
+## Diaries
+
+A diary is an append-only log you add to as the day goes: one file, many
+timestamped entries. Where a memo is about a thing, a diary is about a stream.
+
+```sh
+stpl diary work -m "standup: blocked on CI"   # creates diaries/work.md
+stpl diary work -m "CI fixed, merged the PR"  # a second entry, same file
+stpl diary -m "heading home"                  # the last diary you used
+```
+
+You can keep as many as you like — `work`, `travel`, `health` — each its own
+file under `diaries/`. The file is plain markdown with no frontmatter:
+
+```markdown
+# 2026-09-11T09:15
+
+standup: blocked on CI
+
+# 2026-09-11T14:32
+
+CI fixed, merged the PR
+```
+
+Headings are local time to the minute, so several entries a day stay distinct.
+
+Managing them mirrors the memo commands, and the name is optional everywhere
+(it defaults to the last diary you used, tracked separately from the last memo):
+
+```sh
+stpl diary list          # every diary with its entry count and latest entry
+stpl diary show work     # print the whole diary (pipe-friendly)
+stpl diary edit work     # open it in $EDITOR
+stpl diary path work     # print its absolute path
+stpl diary del work -y   # delete it and all its entries
+```
+
+Two details worth knowing:
+
+- **Adding takes the name exactly** (slugified, so `Work` and `work` are one
+  diary), while `show`/`edit`/`path`/`del` fuzzy-match like memo titles. Adding
+  has to create on demand, and a fuzzy match there would let a typo land in the
+  wrong diary.
+- **`list`, `show`, `edit`, `path`, `del`, and `help` are subcommand names**, so
+  a diary called one of them needs `stpl diary -m "text" -- list`, or the
+  explicit `stpl diary show list`.
+
+Diaries stay out of the memo commands: `overview`, `show`, `edit`, `tag` and the
+rest never see them. `stpl search` does search diary entries, showing each hit
+with the timestamp of the entry it sits in; `-a`/`-b` filter by that entry's
+date, and `-t` excludes diaries since they carry no tags. `stpl sync` commits
+them along with everything else.
 
 ## Title matching
 
@@ -124,6 +182,9 @@ errors, and if the memo has since been deleted or moved outside `stpl` you get:
 ```
 error: no memo given and no recent memo remembered — pass a title, or create one with `stpl new <title>`
 ```
+
+Diaries keep their own pointer in `~/.local/state/stpl/last-diary.toml`, so
+`stpl diary -m "..."` and `stpl show` never interfere with each other.
 
 Scripts and agents should keep passing explicit titles — an implicit target
 depends on whatever ran last.

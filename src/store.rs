@@ -10,6 +10,7 @@ use walkdir::WalkDir;
 
 use crate::{
     config::Config,
+    diary,
     error::StplError,
     memo::{self, Memo, MemoKind},
 };
@@ -19,6 +20,9 @@ use crate::{
 /// Returns an empty vec (NOT an error) when the memo directory does not exist.
 /// Files whose names don't parse as memos are skipped silently. Order is
 /// unspecified; callers sort/group as needed.
+///
+/// The `diaries/` subtree is pruned: diaries are not memos, and a diary named
+/// like `2026-01-01-foo` would otherwise parse as one.
 pub fn list_all(config: &Config) -> Result<Vec<Memo>> {
     let root = &config.memo_directory;
     if !root.exists() {
@@ -26,7 +30,11 @@ pub fn list_all(config: &Config) -> Result<Vec<Memo>> {
     }
 
     let mut memos = Vec::new();
-    for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
+    for entry in WalkDir::new(root)
+        .into_iter()
+        .filter_entry(|e| !is_diaries_dir(e))
+        .filter_map(|e| e.ok())
+    {
         if !entry.file_type().is_file() {
             continue;
         }
@@ -38,6 +46,14 @@ pub fn list_all(config: &Config) -> Result<Vec<Memo>> {
         }
     }
     Ok(memos)
+}
+
+/// Whether `entry` is the `diaries/` directory directly under the memo root.
+///
+/// The depth check confines the prune to the reserved top-level folder, leaving
+/// a coincidentally-named `2026/24/diaries/` alone.
+fn is_diaries_dir(entry: &walkdir::DirEntry) -> bool {
+    entry.depth() == 1 && entry.file_type().is_dir() && entry.file_name() == diary::DIARIES_DIR
 }
 
 /// Create a new memo file for `date`/`slug` with the YAML-frontmatter + H1
@@ -580,6 +596,34 @@ mod tests {
 
         // Refuse to expand an existing project.
         assert!(expand(&project).is_err());
+
+        let _ = fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn list_all_skips_the_diaries_directory() {
+        let tmp = std::env::temp_dir().join(format!("stpl-listdiary-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&tmp);
+        let config = Config {
+            memo_directory: tmp.clone(),
+            disable_color: true,
+        };
+        let date = NaiveDate::from_ymd_opt(2026, 6, 14).unwrap();
+        create(&config, date, "standup", "Standup", None).unwrap();
+
+        // A diary whose name would parse as a memo, if it were ever walked.
+        let diaries = tmp.join("diaries");
+        fs::create_dir_all(&diaries).unwrap();
+        fs::write(
+            diaries.join("2026-01-01-foo.md"),
+            "# 2026-01-01T09:00\n\nx\n",
+        )
+        .unwrap();
+        fs::write(diaries.join("work.md"), "# 2026-01-01T09:00\n\nx\n").unwrap();
+
+        let memos = list_all(&config).unwrap();
+        assert_eq!(memos.len(), 1);
+        assert_eq!(memos[0].slug, "standup");
 
         let _ = fs::remove_dir_all(&tmp);
     }

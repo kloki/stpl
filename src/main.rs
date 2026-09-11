@@ -3,6 +3,7 @@
 mod cli;
 mod commands;
 mod config;
+mod diary;
 mod editor;
 mod error;
 mod memo;
@@ -50,6 +51,7 @@ fn run(cli: Cli) -> anyhow::Result<()> {
         Command::Tag { title, tags } => commands::tag::run(&title, &tags),
         Command::Untag { title, tags } => commands::untag::run(&title, &tags),
         Command::Tags { format } => commands::tags::run(format),
+        Command::Diary(args) => commands::diary::run(args),
         Command::Overview {
             format,
             after,

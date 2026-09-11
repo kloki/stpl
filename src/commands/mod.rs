@@ -3,6 +3,7 @@
 
 pub mod append;
 pub mod del;
+pub mod diary;
 pub mod edit;
 pub mod expand;
 pub mod init;
